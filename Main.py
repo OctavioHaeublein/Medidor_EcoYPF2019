@@ -7,8 +7,7 @@ import pathlib
 
 def cargar ():
     directorio = input("Introduzca el directorio del archivo: ")
-    archivo = input("Introduzca el nombre del archivo: ")
-    Archivo.cargar(archivo, directorio)
+    Archivo.cargar(directorio)
 
 while (True):
     print("----------------------------------------------------------------")

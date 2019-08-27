@@ -3,58 +3,61 @@ import time
 import pathlib
 import datetime
 
-tiempo = []
-tension = []
-corriente = []
-potencia = []
-energia = []
-velocidad = []
 
-def cargar(archivo, directorio):
+
+def cargar(archivo):
     
-    datos = directorio + archivo
-    i = 1
+    directorio = pathlib.Path(archivo)
     
-    try:
-        with open(datos, 'r') as csv_file:
-            reader = csv.DictReader(csv_file)
-            largo = sum(2 for row in reader)
+    for x in directorio.iterdir():
+        tiempo = []
+        tension = []
+        corriente = []
+        potencia = []
+        energia = []
+        velocidad = []
+        i = 1
+        print("Abriendo...")
+        try:
+            with open(x, 'r') as csv_file:
+                reader = csv.DictReader(csv_file)
+                largo = sum(2 for row in reader)
 
-        csv_file.close()
+            csv_file.close()
 
-    except Exception as e:
-        print(f"Error cargando datos desde: {datos}")
-        print("Puede que se encuentre vacio.")
-        print(e)
-        time.sleep(2)
-        return 0
+        except Exception as e:
+            print(f"Error cargando datos desde: {x}")
+            print("Puede que se encuentre vacio.")
+            print(e)
+            time.sleep(2)
+            return 0
 
-    try:
-        with open(datos, 'r') as csv_file:
-            reader = csv.DictReader(csv_file)
-            for row in reader:
-                tiempo.append(row['tiempo'])
-                tension.append(row['tension'])
-                corriente.append(row['corriente'])
-                potencia.append(row['potencia'])
-                energia.append(row['energia'])
-                velocidad.append(row['velocidad'])
-                print(f"-[{i}/{largo}]-")
-                i += 1
-                time.sleep(0.01)
-                
-        csv_file.close()
-        cache(i, largo, archivo)
+        try:
+            with open(x, 'r') as csv_file:
+                reader = csv.DictReader(csv_file)
+                for row in reader:
+                    tiempo.append(row['tiempo'])
+                    tension.append(row['tension'])
+                    corriente.append(row['corriente'])
+                    potencia.append(row['potencia'])
+                    energia.append(row['energia'])
+                    velocidad.append(row['velocidad'])
+                    print(f"-[{i}/{largo}]-")
+                    i += 1
+                    time.sleep(0.01)
+                    
+            csv_file.close()
+            cache(i, largo, x.name, tiempo, tension, corriente, potencia, energia, velocidad)
 
-    except Exception as e:
-        print(f"Error cargando datos desde: {datos}")
-        print("Puede que se encuentre vacio.")
-        print(e)
-        time.sleep(2)
-        return 0
+        except Exception as e:
+            print(f"Error cargando datos desde: {x}")
+            print("Puede que se encuentre vacio.")
+            print(e)
+            time.sleep(2)
+            return 0
 
 
-def cache(i, largo,nombre):
+def cache(i, largo,nombre, tiempo, tension, corriente, potencia, energia, velocidad):
 
     print("Almacenando datos en: cache.txt")
     fecha = int(time.time())

@@ -1,7 +1,6 @@
-import time
-import progressbar as pb
+import pathlib
 
-with pb.ProgressBar(max_value=1000) as bar:
-    for i in range(100):
-        time.sleep(0.1)
-        bar.update(i)
+path = pathlib.Path('F:\Proyectos\Medidor_EcoYPF2019\prueba')
+
+for i in path.iterdir():
+    print(i)

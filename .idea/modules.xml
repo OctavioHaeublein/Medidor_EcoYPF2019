@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../Estacion-Meteorologica/.idea/Estacion-Meteorologica.iml" filepath="$PROJECT_DIR$/../Estacion-Meteorologica/.idea/Estacion-Meteorologica.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/Medidor_EcoYPF2019.iml" filepath="$PROJECT_DIR$/.idea/Medidor_EcoYPF2019.iml" />
     </modules>
   </component>

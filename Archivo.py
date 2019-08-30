@@ -3,8 +3,6 @@ import time
 import pathlib
 import datetime
 
-
-
 def cargar(archivo):
     
     directorio = pathlib.Path(archivo)
@@ -44,7 +42,7 @@ def cargar(archivo):
                     velocidad.append(row['velocidad'])
                     print(f"-[{i}/{largo}]-")
                     i += 1
-                    time.sleep(0.01)
+                    #time.sleep(0.01)
                     
             csv_file.close()
             cache(i, largo, x.name, tiempo, tension, corriente, potencia, energia, velocidad)
@@ -79,7 +77,7 @@ def cache(i, largo,nombre, tiempo, tension, corriente, potencia, energia, veloci
 
                 print(f"-[{i}/{largo}]-")
                 i += 1
-                time.sleep(0.01)
+                #time.sleep(0.01)
 
         csv_file.close()
         return 0

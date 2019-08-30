@@ -9,9 +9,10 @@ def cargar ():
     directorio = input("Introduzca el directorio del archivo: ")
     Archivo.cargar(directorio)
 
-while (True):
+while(True):
+
     print("----------------------------------------------------------------")
-    print(pyfiglet.figlet_format("Eco YPF 2019"))
+    print(pyfiglet.figlet_format("Eco - YPF 2019"))
     print("----------------------------------------------------------------")
     print("1. Cargar")
     print("2. Graficar")
@@ -23,21 +24,10 @@ while (True):
         cargar()
 
     if(entrada == "2"):
-        print("----------------------------------------------------------------")
-        print("1. Todo")
-        print("2. Tiempo")
-        print("3. Tensión")
-        print("4. Corriente")
-        print("5. Potencia")
-        print("6. Energía")
-        print("7. Velocidad")
-        print("----------------------------------------------------------------")
-        variables = input("Variables a graficar (X-Y): ")
-        archivo = input("Introduzca el nombre del archivo: ")
-        directorio = (pathlib.Path(__file__).parent / f'./datos/{archivo}')
-        Graficos.graficar(variables, directorio)
-    
+        Graficos.datos()
+            
     if(entrada == "3"):
         print("Cerrando...")
         time.sleep(1)
         quit()
+      

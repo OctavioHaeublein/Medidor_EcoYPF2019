@@ -22,6 +22,7 @@ def cargar(archivo):
         potencia = []
         energia = []
         velocidad = []
+        potencia_objetivo = []
         i = 1
         print(carga + "Abriendo..." + reset)
         try:
@@ -48,12 +49,13 @@ def cargar(archivo):
                     potencia.append(row['potencia'])
                     energia.append(row['energia'])
                     velocidad.append(row['velocidad'])
+                    potencia_objetivo.append(row[potencia_objetivo])
                     print(carga + f"-[{i}/{largo}]-" + reset)
                     i += 1
                     #time.sleep(0.01)
                     
             csv_file.close()
-            cache(i, largo, x.name, tiempo, tension, corriente, potencia, energia, velocidad)
+            cache(i, largo, x.name, tiempo, tension, corriente, potencia, energia, velocidad, potencia_objetivo)
 
         except Exception as e:
             print(error + f"Error cargando datos desde: {x}")
@@ -64,7 +66,7 @@ def cargar(archivo):
             return 0
 
 
-def cache(i, largo,nombre, tiempo, tension, corriente, potencia, energia, velocidad):
+def cache(i, largo,nombre, tiempo, tension, corriente, potencia, energia, velocidad, potencia_objetivo):
 
     print(carga + "Almacenando datos en: cache.txt" + reset)
     fecha = int(time.time())
@@ -82,7 +84,8 @@ def cache(i, largo,nombre, tiempo, tension, corriente, potencia, energia, veloci
                                  'corriente': str(corriente[x]),
                                  'potencia': str(potencia[x]),
                                  'energia': str(energia[x]),
-                                 'velocidad': str(velocidad[x])})
+                                 'velocidad': str(velocidad[x]),
+                                 'potencia_objetivo': str(potencia_objetivo[x])})
 
                 print(carga + f"-[{i}/{largo}]-" + reset)
                 i += 1

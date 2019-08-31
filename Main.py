@@ -7,36 +7,38 @@ import pathlib
 import os
 from colorama import init, Style, Fore, Back
 
+error = Fore.RED + Style.DIM
+carga = Fore.YELLOW + Back.RESET
+reset = Style.RESET_ALL
+opcion = Fore.GREEN + Style.BRIGHT + Back.MAGENTA
 init()
-intro = Fore.GREEN + Style.BRIGHT + Back.RESET
 
 def cargar ():
-    os.system('cls')
-    print(intro +  "------------------------------------------------------------------")
-    print(pyfiglet.figlet_format("Eco - YPF 2019"))
-    print("------------------------------------------------------------------")
-    print(Style.RESET_ALL)
+    titulo()
     directorio = input("Introduzca el directorio del archivo: ")
     Archivo.cargar(directorio)
 
-while(True):
+def titulo ():
     os.system('cls')
-    print(intro +  "------------------------------------------------------------------")
+    print(opcion + Back.RESET + "------------------------------------------------------------------")
     print(pyfiglet.figlet_format("Eco - YPF 2019"))
-    print("------------------------------------------------------------------")
-    print(Back.MAGENTA + "1." + intro +" Cargar")
-    print(Back.MAGENTA + "2." + intro + " Graficar")
-    print(Back.MAGENTA + "3." + intro + " Salir")
-    print("------------------------------------------------------------------" + Style.RESET_ALL)
+    print("------------------------------------------------------------------" + reset)
+    
+while(True):
+    titulo()
+    print(opcion + "1." + Back.RESET +" Cargar")
+    print(opcion + "2." + Back.RESET + " Graficar")
+    print(opcion + "3." + Back.RESET + " Salir")
+    print("------------------------------------------------------------------" + reset)
     entrada = input("Opción: ")
 
     if(entrada == "1"):
         cargar()
 
     if(entrada == "2"):
-        Graficos.datos()
+        Graficos.datos("")
             
     if(entrada == "3"):
         print("Cerrando...")
-        time.sleep(1)
+        time.sleep(0.5)
         quit()

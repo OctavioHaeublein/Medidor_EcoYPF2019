@@ -2,9 +2,17 @@ import csv
 import time
 import pathlib
 import datetime
+import os
+from colorama import init, Style, Fore, Back
+
+error = Fore.RED + Style.DIM
+carga = Fore.YELLOW
+reset = Style.RESET_ALL
+init()
 
 def cargar(archivo):
     
+    os.system('cls')
     directorio = pathlib.Path(archivo)
     
     for x in directorio.iterdir():
@@ -15,18 +23,18 @@ def cargar(archivo):
         energia = []
         velocidad = []
         i = 1
-        print("Abriendo...")
+        print(carga + "Abriendo..." + reset)
         try:
             with open(x, 'r') as csv_file:
                 reader = csv.DictReader(csv_file)
                 largo = sum(2 for row in reader)
-
             csv_file.close()
 
         except Exception as e:
-            print(f"Error cargando datos desde: {x}")
+            print(error + f"Error cargando datos desde: {x}")
             print("Puede que se encuentre vacio.")
             print(e)
+            print(reset)
             time.sleep(2)
             return 0
 
@@ -40,7 +48,7 @@ def cargar(archivo):
                     potencia.append(row['potencia'])
                     energia.append(row['energia'])
                     velocidad.append(row['velocidad'])
-                    print(f"-[{i}/{largo}]-")
+                    print(carga + f"-[{i}/{largo}]-" + reset)
                     i += 1
                     #time.sleep(0.01)
                     
@@ -48,16 +56,17 @@ def cargar(archivo):
             cache(i, largo, x.name, tiempo, tension, corriente, potencia, energia, velocidad)
 
         except Exception as e:
-            print(f"Error cargando datos desde: {x}")
+            print(error + f"Error cargando datos desde: {x}")
             print("Puede que se encuentre vacio.")
             print(e)
+            print(reset)
             time.sleep(2)
             return 0
 
 
 def cache(i, largo,nombre, tiempo, tension, corriente, potencia, energia, velocidad):
 
-    print("Almacenando datos en: cache.txt")
+    print(carga + "Almacenando datos en: cache.txt" + reset)
     fecha = int(time.time())
     archivo = str(fecha) + " - " +nombre
     cache = (pathlib.Path(__file__).parent / f'./datos/{archivo}')
@@ -75,7 +84,7 @@ def cache(i, largo,nombre, tiempo, tension, corriente, potencia, energia, veloci
                                  'energia': str(energia[x]),
                                  'velocidad': str(velocidad[x])})
 
-                print(f"-[{i}/{largo}]-")
+                print(carga + f"-[{i}/{largo}]-" + reset)
                 i += 1
                 #time.sleep(0.01)
 
@@ -83,7 +92,8 @@ def cache(i, largo,nombre, tiempo, tension, corriente, potencia, energia, veloci
         return 0
 
     except Exception as e:
-        print(f"Error cargando datos desde: {cache}")
+        print(error + f"Error cargando datos desde: {cache}")
         print(e)
+        print(reset)
         time.sleep(2)
         return 0

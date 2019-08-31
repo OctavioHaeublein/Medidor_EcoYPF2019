@@ -6,41 +6,42 @@
 #define PI 3.1415926535897932384626433832795
 
 /*---VARIABLES MODULO SD---*/
-int cs = 53;					//pin al que se conecta el chip select
-int posicion_principal = 0;
-int posicion_secundario = 0;
-String datos_principal = "dprim_";
-String datos_secundario = "dsec_";
-String extension = ".txt";
+int cs = 53;						//pin al que se conecta el chip select
+int posicion_principal = 0;			//Numero de archivo principal
+int posicion_secundario = 0;		//Numero de archivo secundario
+String datos_principal = "dprim_";	//Nombre del archivo principal de adquisición de datos
+String datos_secundario = "dsec_";	//Nombre del archivo secundario
+String extension = ".txt";			//Extensión del archivo para concatenarlos
 
 /*---VARIABLES SENSORES---*/
-float revoluciones = 0;			//Contador de revoluciones dadas por la rueda del auto
-float tension_divisor = 0;		//Valor de tension de entrada del divisor resistivo 
-float tension_hall = 0;			//Valor de tension de entrada del sensor hall
+float revoluciones = 0;				//Contador de revoluciones dadas por la rueda del auto
+float tension_divisor = 0;			//Valor de tension de entrada del divisor resistivo 
+float tension_hall = 0;				//Valor de tension de entrada del sensor hall
 
 /*---VARIABLES PROGRAMA---*/
-float tiempo = 0;               //Tiempo transcurrido del programa en horas
+float tiempo_transcurrido = 0;               	//Tiempo transcurrido del programa en horas
 float tiempo_inicio = 0;
-float tiempo_actual = 0;        //Variable auxiliar para el calculo del tiempo
-float tiempo_previo = 0;        //Variable auxiliar para el calculo del tiempo
+float tiempo_actual = 0;        	//Variable auxiliar para el calculo del tiempo
+float tiempo_previo = 0;        	//Variable auxiliar para el calculo del tiempo
 
-float tension = 0;              //Nivel de tension de las baterias
-float corriente = 0;            //Corriente calculada del motor (Depende si carga, o no lo hace)
-float potencia = 0;             //Potencia del motor
-float energia = 0;              //Energia consumida por el motor
-float velocidad = 0;            //Velocidad tangencial de la rueda (Km/h)
-float frecuencia = 0;           //Revoluciones por segundo del eje
+float tension = 0;              	//Nivel de tension de las baterias
+float corriente = 0;            	//Corriente calculada del motor (Depende si carga, o no lo hace)
+float potencia = 0;             	//Potencia del motor
+float energia = 0;              	//Energia consumida por el motor
+float velocidad = 0;            	//Velocidad tangencial de la rueda (Km/h)
+float frecuencia = 0;           	//Revoluciones por segundo del eje
 
-float diametro = 0;             //Diametro del eje (mm)
-int muestreo = 200;            	//Frecuencia con la que se almacenan los datos en la tarjeta SD (ms)
-float tiempo_objetivo = 0;		//Tiempo de funcionamiento necesario
-float tension_minima = 0;		//Tension minima a la que puede funcionar el auto
+float diametro = 0;             	//Diametro del eje (mm)
+int muestreo = 200;            		//Frecuencia con la que se almacenan los datos en la tarjeta SD (ms)
+float tiempo_objetivo = 0;			//Tiempo de funcionamiento necesario
+float tension_minima = 41.6;		//Tension minima a la que puede funcionar el auto
+float capacidad_baterias = 10;      //Capacidad de las baterias (Ampere - hora)
 
-bool doble = false;             //Booleano que comprueba si los datos deberan guardarse en un archivo a parte
-bool modo_debug = true;			//Booleano para pasar variables por monitor serie
-bool constantes = true;			//Booleano para cargar constantes desde la SD
+float potencia_objetivo = 0;
 
-String error = "";				//Texto a mostrar en display/puerto serie cuando haya un error
+bool doble = false;             	//Booleano que comprueba si los datos deberan guardarse en un archivo a parte
+bool modo_debug = true;				//Booleano para pasar variables por monitor serie
+bool constantes = true;				//Booleano para cargar constantes desde la SD
 
 /***POSBLES ERRORES***
  * ERROR 1 -> ERROR COMUNICANDO CON EL MODULO SD
@@ -61,13 +62,14 @@ String error = "";				//Texto a mostrar en display/puerto serie cuando haya un e
  * Retomar lectura de archivos desde la ultima lectura (chequear y preguntar por display / puerto serie)
  * Calcular distanica recorrida de la rueda en funcion de la velocidad y tiempo en python
  * Actualizar numeros de archivos de datos principal y secundario
+ * Agregar funcion para los 10 leds y el rgb
 */
 
 LiquidCrystal_I2C lcd(0x27,16,2);   //Crea el obtejo "lcd" y define la dirección de comunicación, y tamaño (20x4)
 
 void setup() {
 
-	/*---INICIO DE PROGRAMA---*/
+  /*---INICIO DE PROGRAMA---*/
 	
   Serial.begin(9600);           	//Inicia una comunicacion serial para edicion de codigo
   tiempo_inicio = millis();     	//Toma el tiempo de inicio del programa en milisegundos
@@ -109,12 +111,15 @@ void setup() {
 }
 
 void loop() {
+  
   /*---CALCULO DE TIEMPO---*/
+  
   tiempo_actual = millis();
   tiempo_transcurrido = ((tiempo_actual-tiempo_inicio)/3600000);     //Calcula el tiempo transcurrido en horas para la energia
-  tiempo_objetivo -= tiempo_transcurrido
+  tiempo_objetivo -= tiempo_transcurrido;
   
   /*---COMPROBACION DE TIEMPO---*/
+  
   if((tiempo_actual - tiempo_previo) >= muestreo){
   
     tiempo_previo = tiempo_actual;						//Vuelve a tomar el tiempo para comenzar nuevamente
@@ -123,13 +128,12 @@ void loop() {
     detachInterrupt(digitalPinToInterrupt(3));
     
     calcular();											//Llama a la funcion calcular() para obtener los datos
-    
-    SD_guardar(datos_principal);
+    leds(tension, potencia_objetivo);                   //Llama a la funcion leds() para encender la cantidad de leds necesarios y controlar el rgb
+    SD_guardar(datos_principal);                        //Para guardar los datos en el txt
 
     if(doble){											//Si el boton fue oprimido, se guardaran dos veces las variables
       
       SD_guardar(datos_secundario);
-      Serial.println(datos_secundario);
     
     }
     
@@ -155,7 +159,8 @@ void LCD_datos (float tension,float corriente, float potencia, float energia, fl
 void LCD_error (String error){
   lcd.clear();                        //Limpia el LCD de todo lo que tenga escrito
   lcd.setCursor(0,0);                 //Pone el cursor en el primer casillero de la primer fila
-  lcd.print(error);                   //Escribe el error donde debería estar el cursor   
+  lcd.print(error);                   //Escribe el error donde debería estar el cursor
+  Serial.println(error);   
   return;
 }
 
@@ -164,7 +169,6 @@ void SD_guardar (String archivo){
   File datos;                             //Crea el objeto "datos" para trabajar con la librería
   
   if(!SD.begin(cs)){
-    Serial.println("E1");
     LCD_error("E1");
     return;
   }
@@ -172,12 +176,11 @@ void SD_guardar (String archivo){
   datos = SD.open(archivo,FILE_WRITE);    //La variable "Archivo" Puede variar entre copias y el principal
   
   if(!datos){                             //Comprueba si puede escribir a la SD, envía error si no fuese así
-    Serial.println("E2");
     LCD_error("E2");
     return;
   }
                                           //Almacena las distintas variables separadas por una coma
-  datos.print(tiempo);
+  datos.print(tiempo_transcurrido);
   datos.print(",");
   datos.print(tension);
   datos.print(",");
@@ -205,8 +208,32 @@ void SD_constantes(){
       archivo.seek(0);
       posicion_principal = archivo.read();
       posicion_secundario = archivo.read();
-      constantes = true;
+      tiempo_transcurrido = archivo.read();
+      tension = archivo.read();
+      corriente = archivo.read();
+      potencia = archivo.read();
+      energia = archivo.read();
+      velocidad = archivo.read();
+      
       archivo.close();
+      
+      if((tiempo_transcurrido != 0) && (tension != 0) && (corriente != 0) && (potencia != 0) && (energia != 0)){
+        Serial.println("Se han encontrado datos almacenados previamente");
+        Serial.println("Desea cargarlos? (Y/N)");
+        while(Serial.available()==0){}
+        char respuesta = Serial.read();
+        if(respuesta == 'n'){
+          float tiempo_transcurrido = 0;
+          float tension = 0;              	
+          float corriente = 0;            
+          float potencia = 0;             
+          float energia = 0;             
+          float velocidad = 0;            
+        }else{SD_guardar(datos_principal);}
+      }
+      
+      constantes = true;
+      
     }else{
       LCD_error("E2, E3");
     }
@@ -252,9 +279,21 @@ float calcular (){
   return tension, corriente, potencia, energia, velocidad;
 }
 
+void leds(float tension, float potencia_objetivo){
+
+  int cantidad_leds = map(tension,tension_minima,50,0,9);
+  int leds[] = {23,25,27,29,31,33,35,37,39,41};
+  for(int i = 0; i<=9; i++){
+    digitalWrite(leds[i],LOW);
+  }
+  for(int i = 0; i <= cantidad_leds; i++){
+    digitalWrite(leds[i],HIGH);
+  }
+}
+
 void debug (){
   Serial.print("Tiempo transcurrido: ");
-  Serial.println(tiempo);
+  Serial.println(tiempo_transcurrido);
   Serial.print("Tension: ");
   Serial.println(tension);
   Serial.print("Corriente: ");
@@ -266,8 +305,7 @@ void debug (){
   Serial.print("Velocidad: ");
   Serial.println(velocidad);
   Serial.println(datos_principal);
-  //Serial.println(datos_secundario);
-  Serial.println(error);
+  Serial.println(datos_secundario);
 }
 
 void blink(){
@@ -278,18 +316,12 @@ void blink(){
 	posicion_secundario++;
 	datos_secundario = "dsec_";
 	
-  }else{
-  
-	if(digitalRead(2) == 0 && !doble){
-		datos_secundario.concat(posicion_secundario);
-		datos_secundario.concat(extension);
-		doble = true;
-	
+  }else{if(digitalRead(2) == 0 && !doble){
+          datos_secundario.concat(posicion_secundario);
+          datos_secundario.concat(extension);
+          doble = true;
 		}else{									//Si se pone en 0 la entrada del sensor optico, agrega una revolucion al contador
-			
-			revoluciones++;
-			
+			revoluciones++;		
 			}
   }
-  
 }

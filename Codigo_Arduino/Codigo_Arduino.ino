@@ -11,7 +11,7 @@ int posicion_principal = 0;			    //Numero de archivo principal
 int posicion_secundario = 0;		    //Numero de archivo secundario
 String datos_principal = "dprim_";	    //Nombre del archivo principal de adquisición de datos
 String datos_secundario = "dsec_";	    //Nombre del archivo secundario
-String datos_constantes = "const.txt"   //Nombre del archivo con las constantes asignadas
+String datos_constantes = "const.txt";   //Nombre del archivo con las constantes asignadas
 String extension = ".txt";			    //Extensión del archivo para concatenarlos
 
 /*---VARIABLES SENSORES---*/
@@ -21,10 +21,8 @@ float tension_hall = 0; 				//Valor de tension de entrada del sensor hall
 
 /*---VARIABLES PROGRAMA---*/
 float tiempo_transcurrido = 0;          //Tiempo transcurrido del programa en horas
-float tiempo_inicio = 0;
-float tiempo_actual = 0;        	    //Variable auxiliar para el calculo del tiempo
 float tiempo_previo = 0;        	    //Variable auxiliar para el calculo del tiempo
-float tiempo_programa = 0;
+float tiempo_programa = 0;              //Tiempo desde el ultimo calculo de variables
 
 float tension = 0;              	    //Nivel de tension de las baterias
 float corriente = 0;            	    //Corriente calculada del motor (Depende si carga, o no lo hace)
@@ -35,7 +33,7 @@ float frecuencia = 0;           	    //Revoluciones por segundo del eje
 float potencia_objetivo = 0;            //Potencia calculada que debera mantener para alcanzar el timepo objetivo
 
 float diametro = 0;             	    //Diametro del eje (mm)
-int muestreo = 200;            		    //Frecuencia con la que se almacenan los datos en la tarjeta SD (ms)
+int muestreo = 500;            		    //Frecuencia con la que se almacenan los datos en la tarjeta SD (ms)
 float tiempo_objetivo = 0;			    //Tiempo de funcionamiento necesario
 float tension_minima = 41.6;		    //Tension minima a la que puede funcionar el auto
 float capacidad_baterias = 10;          //Capacidad de las baterias (Ampere - hora)
@@ -69,8 +67,6 @@ void setup() {
   /*---INICIO DE PROGRAMA---*/
 	
   Serial.begin(9600);           	//Inicia una comunicacion serial para edicion de codigo
-  tiempo_inicio = millis();     	//Toma el tiempo de inicio del programa en milisegundos
-  tiempo_previo = tiempo_inicio;	//Iguala el tiempo a esta variable para controlar el programa
   
   /*---CONFIGURACION LCD---*/  
   lcd.init();
@@ -112,36 +108,22 @@ void setup() {
 }
 
 void loop() {
+
+  tiempo();                                                   //Actualiza los valores de tiempo_programa, tiempo_transcurrido, y tiempo_objetivo
+  calcular();											      //Llama a la funcion calcular() para obtener los datos
+  leds(tension, potencia_objetivo);                           //Llama a la funcion leds() para encender la cantidad de leds necesarios y controlar el rgb
+
+  if( (tiempo_programa >= muestreo) && (velocidad != 0) || (corriente != 0) ){
   
-  /*---CALCULO DE TIEMPO---*/
-  
-  tiempo_actual = millis();
-  tiempo_programa = (tiempo_actual - tiempo_previo);
-  tiempo_transcurrido = ((tiempo_actual-tiempo_inicio)/3600000);     //Calcula el tiempo transcurrido en horas para la energia
-  
-  if(tiempo_objetivo > 0){
-  tiempo_objetivo -= tiempo_transcurrido;
-  }else{
-    tiempo_objetivo = 0;
-  }
-  
-  /*---COMPROBACION DE TIEMPO---*/
-  
-  if( tiempo_programa >= muestreo ){
-  
-    tiempo_previo = tiempo_actual;						      //Vuelve a tomar el tiempo para comenzar nuevamente
-    
     detachInterrupt(digitalPinToInterrupt(2));         	      //Elimina temporalmente las interrupciones para poder grabar los datos
     detachInterrupt(digitalPinToInterrupt(3));
     
-    calcular();											      //Llama a la funcion calcular() para obtener los datos
-    leds(tension, potencia_objetivo);                         //Llama a la funcion leds() para encender la cantidad de leds necesarios y controlar el rgb
+    tiempo_previo = millis();					              //Vuelve a tomar el tiempo para comenzar nuevamente
+
     SD_guardar(datos_principal);                              //Para guardar los datos en el txt
 
     if(doble){											      //Si el boton fue oprimido, se guardaran dos veces las variables
-      
       SD_guardar(datos_secundario);
-    
     }
     
     if(modo_debug){debug();}							      //Funcion para ver los datos en el puerto serie
@@ -150,7 +132,18 @@ void loop() {
     attachInterrupt(digitalPinToInterrupt(3), blink, LOW);
   }
 
+}
+
+void tiempo(){
+
+  tiempo_programa = (millis() - tiempo_previo);         //Tiempo desde el ultimo muestreo para el programa
+  tiempo_transcurrido = (millis()/3600000);             //Tiempo transcurrido del programa en horas para la energia
   
+  if( (tiempo_objetivo - tiempo_transcurrido) > 0 ){    //Vuelve a calcular el valor del tiempo objetivo en funcion del transcurrido
+  tiempo_objetivo -= tiempo_transcurrido;
+  }else{
+    tiempo_objetivo = 0;
+  }
   
 }
 
@@ -210,7 +203,7 @@ void SD_guardar (String archivo){
   return;
 }
 
-void SD_constantes_VIEJO(){
+void SD_constantes_VIEJO(String archivo){
   
  if(SD.begin(cs)){
 	
@@ -258,8 +251,7 @@ void SD_constantes_VIEJO(){
   datos_principal.concat(posicion_principal);
   datos_principal.concat(extension);			//Forma el nombre del archivo de datos principal
   posicion_principal++;                         //Suma 1 a la posicion principal para seguir el conteo
-  
-  return;
+
 }
 
 float calcular (){
@@ -289,7 +281,7 @@ float calcular (){
 
   /*---CALCULO DE VELOCIDAD TANGENCIAL---*/
   
-  frecuencia = (revoluciones/((tiempo_actual-tiempo_previo)/1000));	//Calcula la frecuencia (c/s)
+  frecuencia = (revoluciones/(tiempo_programa/1000));	//Calcula la frecuencia (c/s)
   revoluciones = 0;
   velocidad = (((PI*diametro*frecuencia)/1000)*3.6);				//Calcula la velocidad de la rueda (Km/h)
   
@@ -359,12 +351,14 @@ void SD_constantes(){
   File datos;                             //Crea el objeto "datos" para trabajar con la librería
   
   if(!SD.begin(cs)){
-    LCD_display("E1");
+    LCD_display("E3, E1");
     return;
   }
   
   for (int i = 0; i<= 20; i++){
     datos_principal.concat(i);
+    datos_principal.concat(extension);
+    
     if(SD.exists(datos_principal)){
       posicion_principal = (i+1);
       break;
@@ -374,6 +368,8 @@ void SD_constantes(){
   }
   for (int i = 0; i<= 20; i++){
     datos_secundario.concat(i);
+    datos_secundario.concat(extension);
+    
     if(SD.exists(datos_secundario)){
       datos_secundario = "dsec_";
       posicion_secundario = (i+1);
@@ -386,22 +382,20 @@ void SD_constantes(){
   }
   
   if(datos_secundario == "dsec_"){
-    datos_secundario = "dsec_0";
+    datos_secundario = "dsec_0.txt";
   }
   
   if(datos_principal == "dprim_"){
-    datos_principal = "dprim_0";
+    datos_principal = "dprim_0.txt";
     constantes = true;
     return;
   }else{
-    tiempo_previo = millis();
-    
-    while((digitalRead(2) != 0) && (tiempo_programa <= 3000)){
-    
-      tiempo_programa = (tiempo_actual-tiempo_previo);
-      LCD_display("Cargar datos?" + String(3 - (tiempo_programa/1000)));
+
+    while((digitalRead(2) > 0) && (tiempo_programa <= 3000)){
+      tiempo();
+      LCD_display("Cargar datos? " + String(3 - (tiempo_programa/1000)));
       
-      if((tiempo_programa >= 2900) && (digitalRead(2) != 0)){
+      if(tiempo_programa >= 2900){
         constantes = true;
         datos_principal = "dprim_";
         datos_principal.concat(posicion_principal);
@@ -414,14 +408,14 @@ void SD_constantes(){
   datos = SD.open(datos_principal,FILE_READ);    //La variable "Archivo" Puede variar entre copias y el principal
   
   if(!datos){                                    //Comprueba si puede escribir a la SD, envía error si no fuese así
-    LCD_display("E2");
+    LCD_display("E3, E2");
     return;
   }
   int posicion = 0;
   
   for(int i = 0; i <= datos.size() ; i++){       //Busca por la ultima linea para poder leer exclusivamente esa
     datos.seek(datos.size()-i);
-    if(datos.read() == 10){
+    if(datos.read() == 10){                     //PUEDE SER QUE HAYA QUE CAMBIAR A i = 1 POR EL TEMA DE NUEVA LINEA
       posicion = (datos.position()+1);          //Devuelve la posicion del primer caracter de la ultima linea
       break;
     }
@@ -432,13 +426,13 @@ void SD_constantes(){
   datos = SD.open(datos_principal,FILE_READ);    //La variable "Archivo" Puede variar entre copias y el principal
   
   if(!datos){                                    //Comprueba si puede escribir a la SD, envía error si no fuese así
-    LCD_display("E2");
+    LCD_display("E3, E2");
     return;
   }
   
-  datos.seek(posicion);
+  datos.seek(posicion);                          //Se desplaza hasta la posicion obtenida anteriormente
   
-  if(datos.available()){
+  if(datos.available()){                         //Comienza a leer la ultima fila para obtener los datos guardados
     tiempo_transcurrido = datos.read();
     tension = datos.read();
     corriente = datos.read();

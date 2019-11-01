@@ -1,0 +1,184 @@
+Class Modulo_SD{
+	
+	Private:
+		
+		#include <SD.h>
+		#define cs 9
+		
+		int posicion_principal = 0;			    //Numero de archivo principal
+		int posicion_secundario = 0;		    //Numero de archivo secundario
+
+		String datos_principal = "DPRIM_";	    //Nombre del archivo principal de adquisición de datos
+		String datos_secundario = "DSEC_";	    //Nombre del archivo secundario
+		String extension = ".txt";			    //Extensión del archivo para concatenarlos
+
+	Public:
+	
+		int constantes(){					//Al inicio del programa busca datos anteriores para cargar
+
+			File datos;                           //Crea el objeto "datos" para trabajar con la librería
+			LCD_display("Cargando...");			//Intenta comunicarse con el modulo SD
+			
+			While(!SD.begin(cs)){}
+			
+			  
+			for (int i = 0; i<= 20; i++){			//Comienza a buscar el ultimo archivo principal de datos
+				datos_principal.concat(i);
+				datos_principal.concat(extension);
+					
+			if( (!SD.exists(datos_principal)) && (i > 0) ){
+				datos_principal = "DPRIM_";
+				datos_principal.concat(i-1);
+				datos_principal.concat(extension);
+				
+				if( SD.exists(datos_principal) ){
+					posicion_principal = i;
+					datos_principal.concat(i);
+					datos_principal.concat(extension);
+					break;					
+					}else{datos_principal = "DPRIM_";}
+				}else{datos_principal = "DPRIM_";}
+			  
+			}
+			  
+			for (int i = 0; i<= 20; i++){			//Comienza a buscar el ultimo archivo secundario de datos
+			datos_secundario.concat(i);
+			datos_secundario.concat(extension);
+				
+			if( (!SD.exists(datos_principal)) && (i > 0) ){
+				datos_secundario = "DSEC_";
+				datos_secundario.concat(i-1);
+				datos_secundario.concat(extension);
+				
+				if( SD.exists(datos_secundario) ){
+					posicion_secundario = i;
+					datos_secundario.concat(i);
+					datos_secundario.concat(extension);
+					break;
+					}else{datos_secundario = "DSEC_";}
+				}else{datos_secundario = "DSEC_";}
+			
+			}
+			  
+			if(datos_secundario == "DSEC_"){
+				datos_secundario = "DSEC_0.txt";	//Si no encuentra un archivo secundario, lo nombra como el primero
+			}
+			
+			if(datos_principal == "DPRIM_"){		//Si no encuentra un archivo principal de datos, se nombra como el primero
+				datos_principal = "DPRIM_0.txt";
+				return;
+				}else{								//De encontrarse un archivo, intenta cargar la ultima linea de datos
+				  
+					String decision = "NO";
+				  
+					while(true){
+						lcd.clear();          
+						lcd.setCursor(0,0);             
+						lcd.print("Desea cargar?");                  
+						lcd.setCursor(0,1);
+						lcd.print(decision);
+						est_encoder = encoder.read();
+						if(est_encoder != ultimo_est_encoder){
+							if(cargar){decision = "NO";}
+							if(!cargar){decision = "SI";}
+							cargar = !cargar;
+						}
+						
+						ultimo_est_encoder = est_encoder;
+						
+						if(digitalRead(sw) == 0){
+							if(cargar){
+								LCD_display("Cargando datos...");
+								break;
+								}
+							if(!cargar){return;}
+						}
+						
+						delay(150);
+					}
+				}
+
+			datos = SD.open(datos_principal,FILE_READ);    //La variable "Archivo" Puede variar entre copias y el principal
+			  
+			if(!datos){                                    //Comprueba si puede escribir a la SD, envía error si no fuese así
+				LCD_display("E3, E2");
+				return;
+			}
+			  
+			int posicion = 0;
+			  
+			for(int i = 1; i <= datos.size() ; i++){       //Busca por la ultima linea para poder leer exclusivamente esa
+				datos.seek(datos.size()-i);
+				if(datos.read() == 10){                     //PUEDE SER QUE HAYA QUE CAMBIAR A i = 1 POR EL TEMA DE NUEVA LINEA
+					posicion = (datos.position()+1);          //Devuelve la posicion del primer caracter de la ultima linea
+					break;
+				}
+			}
+			  
+			datos.close();
+			  
+			datos = SD.open(datos_principal,FILE_READ);    //La variable "Archivo" Puede variar entre copias y el principal
+			  
+			if(!datos){                                    //Comprueba si puede escribir a la SD, envía error si no fuese así
+				LCD_display("E3, E2");
+				return;
+			}
+			  
+			datos.seek(posicion);                          //Se desplaza hasta la posicion obtenida anteriormente
+			  
+			if(datos.available()){                         //Comienza a leer la ultima fila para obtener los datos guardados
+				tiempo_transcurrido = datos.read();
+				tension = datos.read();
+				corriente = datos.read();
+				potencia = datos.read();
+				energia = datos.read();
+				velocidad = datos.read();
+				corriente_objetivo = datos.read();
+				constantes = true;
+			}else{
+				LCD_display("E3");
+				datos.close();
+				return;
+				}
+			  
+			datos.close();
+			LCD_display("Cargado con exito!");
+			
+			return posicion_principal, posicion_secundario;
+			
+			}
+		
+		void SD_guardar (String archivo){		//Guardar datos en archivo txt
+  
+		File datos;                             //Crea el objeto "datos" para trabajar con la librería
+		  
+		if(!SD.begin(cs)){
+			LCD_display("E1");
+			return;
+		}
+		  
+		datos = SD.open(archivo,FILE_WRITE);    //La variable "Archivo" Puede variar entre copias y el principal
+		  
+		if(!datos){                             //Comprueba si puede escribir a la SD, envía error si no fuese así
+			LCD_display("E2");
+			return;
+		}
+												  //Almacena las distintas variables separadas por una coma
+		datos.print(tiempo_transcurrido);
+		datos.print(",");
+		datos.print(tension);
+		datos.print(",");
+		datos.print(corriente);
+		datos.print(",");
+		datos.print(potencia);
+		datos.print(",");
+		datos.print(energia);
+		datos.print(",");
+		datos.print(velocidad);
+		datos.print(",");
+		datos.println(corriente_objetivo);
+		  
+		datos.close();                          //Cierra el archivo y vuelve al programa
+		return;
+		}
+}

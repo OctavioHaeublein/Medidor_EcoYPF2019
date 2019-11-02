@@ -1,5 +1,6 @@
-Class Calculos{
-	Private:
+class Calculos{
+	
+	private:
 		
 		float tension_divisor = 0;  			//Valor de tension de entrada del divisor resistivo 
 		float tension_hall = 0; 				//Valor de tension de entrada del sensor hall
@@ -9,11 +10,14 @@ Class Calculos{
 		float capacidad_baterias = 10;          //Capacidad de las baterias (Ampere - hora)
 		
 		float sum_corriente = 0;				//Variable para la sumatoria de corriente en el tiempo
-		float SOC_inicial = 1;					//Estado de carga inicial de las baterias 	(Medido con tension en vacio)
-		float SOC_calculado = 0;				//Estado de bateria calculado por suma de corrientes
-		float contador_SOC = 0;					//Contador para el calculo del SOC 
+		float soc_inicial = 1;					//Estado de carga inicial de las baterias 	(Medido con tension en vacio)
+		float soc_calculado = 0;				//Estado de bateria calculado por suma de corrientes
+		float contador_soc = 0;					//Contador para el calculo del soc 
 
-	Public:
+		float r1 = 1010000;
+		float r2 = 82100;
+
+	public:
 		//FALTA SOLUCIONAR EL CALCULO DE LA ENERGIA DE ALGUNA FORMA
 		
 		float tension = 0;              	    //Nivel de tension de las baterias
@@ -23,8 +27,12 @@ Class Calculos{
 		float velocidad = 0;            	    //Velocidad tangencial de la rueda (Km/h)
 
 		float corriente_objetivo = 0;           //Corriente estimada que debera mantener para alcanzar el timepo objetivo
-		float SOC = 0;							//Estado de carga actual de las baterias (SOC_calculado - SOC_inicial)
+		float soc = 0;							//Estado de carga actual de las baterias (soc_calculado - soc_inicial)
 		
+		float tiempo_objetivo = 0;
+		float tiempo_inicio_prueba = 0;
+		float tiempo_transcurrido = 0;
+
 		void setup(){
 						
 			/*---ANALOG INPUTS---*/
@@ -32,23 +40,27 @@ Class Calculos{
 			pinMode(A1, INPUT);   			//Nivel de tension del sensor Hall
 			
 		}
+
+		long interpolar (long x, long in_min, long in_max, long out_min,long out_max){
+			return ( (x-in_min)*(out_max - out_min) + (out_min * (in_max - in_min)) ) / (in_max - in_min);
+		}
 		
 		float calcular_capacidad (bool tabla){	//Calculo de capacidad restante de  la bateria y calculo por tabla
 			
-			if(tabla){SOC_inicial = map(tension,46.04,50.92,0.1,1);}
+			if(tabla){soc_inicial = map(tension,46.04,50.92,0.1,1);}
 			
-			SOC_calculado = (-1/capacidad_baterias) * (muestreo * contador_SOC * sum_corriente);
+			soc_calculado = (-1/capacidad_baterias) * (tiempo_transcurrido * sum_corriente);
 			
-			SOC = (SOC_inicial - SOC_calculado);
+			soc = (soc_inicial - soc_calculado);
 			
-			contador_SOC = 0;
+			contador_soc = 0;
 			sum_corriente = 0;
-			SOC_inicial = SOC;
+			soc_inicial = soc;
 			
-			SOC = (SOC * capacidad_baterias);
-			corriente_objetivo = (SOC / (tiempo_objetivo/60));			//Divide la capacidad restante de la bateria (Ah) por el tiempo restante pasado a horas, para determinar la corriente para desarrollar
+			soc = (soc * capacidad_baterias);
+			corriente_objetivo = (soc / (tiempo_objetivo/60));			//Divide la capacidad restante de la bateria (Ah) por el tiempo restante pasado a horas, para determinar la corriente para desarrollar
 			
-			return SOC, corriente_objetivo;
+			return soc, corriente_objetivo;
 		}
 		
 		float calcular(){
@@ -70,17 +82,17 @@ Class Calculos{
 			  
 			tension_hall    = (tension_hall / 10); 										//Mapea los niveles de tension medidos por el sensor hall
 			  
-			if(tension_hall >= 525){     corriente 	      = interpolar (tension_hall, 525, 1023, 0, 70);}}
+			if(tension_hall >= 525){     corriente 	      = interpolar (tension_hall, 525, 1023, 0, 70);}
 			else{if(tension_hall < 525){ corriente 	      = interpolar (tension_hall, 0, 525, 0, -70);}}
 			
 			sum_corriente  +=  corriente;
 			potencia        = (tension * corriente);								//Calcula la potencia en funcion de la corriente, y la tension medida en las baterias
 			sum_potencia   +=  potencia;											//Calcula la energia consumida hasta ese punto en funcion de la potencia y tiempo (watt - hora)
-			energia         = (sum_potencia * tiempo_energia);
+			energia         = (sum_potencia * tiempo_transcurrido);
 			
-			SOC, corriente_objetivo = calcular_capacidad();
+			soc, corriente_objetivo = calcular_capacidad(false);
 			
-			return tension, corriente, potencia, energia, SOC, corriente_objetivo;
+			return tension, corriente, potencia, energia, soc, corriente_objetivo;
 		}
 
-}
+};

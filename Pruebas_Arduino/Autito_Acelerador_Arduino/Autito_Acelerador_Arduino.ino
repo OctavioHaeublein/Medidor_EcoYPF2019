@@ -34,8 +34,7 @@ float limite_pid = 0;
 long tension_hall = 0;
 long tension_divisor = 0;
 
-float r1 = 1010000;
-float r2 = 82100;
+
 
 LiquidCrystal_I2C lcd(0x27,20,4);   //Crea el obtejo "lcd" y define la dirección de comunicación, y tamaño (20x4)
 

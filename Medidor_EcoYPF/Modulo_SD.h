@@ -1,25 +1,29 @@
-Class Modulo_SD{
+class Modulo_SD{
 	
-	Private:
+	private:
 		
 		#include <SD.h>
+		#include <SPI.h>
+		#include "LCD_Leds.h"
 		#define cs 9
 		
-		int posicion_principal = 0;			    //Numero de archivo principal
-		int posicion_secundario = 0;		    //Numero de archivo secundario
+		int posicion_principal = 0;			    	//Numero de archivo principal
+		int posicion_secundario = 0;				//Numero de archivo secundario
 
-		String datos_principal = "DPRIM_";	    //Nombre del archivo principal de adquisición de datos
-		String datos_secundario = "DSEC_";	    //Nombre del archivo secundario
-		String extension = ".txt";			    //Extensión del archivo para concatenarlos
-
-	Public:
+	public:
 	
-		int constantes(){					//Al inicio del programa busca datos anteriores para cargar
+		String datos_principal = "DPRIM_";	    	//Nombre del archivo principal de adquisición de datos
+		String datos_secundario = "DSEC_";	    	//Nombre del archivo secundario
+		String extension = ".txt";			    	//Extensión del archivo para concatenarlos
+		bool guardar_secundario = false;			//Indica si deberan guardarse en archivo a parte los valores obtenidos
 
-			File datos;                           //Crea el objeto "datos" para trabajar con la librería
-			LCD_display("Cargando...");			//Intenta comunicarse con el modulo SD
+		String setup(){								//Al inicio del programa busca datos anteriores para cargar
+
+			LCD_Leds.display("Cargando...");		//Intenta comunicarse con el modulo SD
 			
-			While(!SD.begin(cs)){}
+			if(!SD.begin(cs)){
+				return;
+			}
 			
 			  
 			for (int i = 0; i<= 20; i++){			//Comienza a buscar el ultimo archivo principal de datos
@@ -66,42 +70,25 @@ Class Modulo_SD{
 			
 			if(datos_principal == "DPRIM_"){		//Si no encuentra un archivo principal de datos, se nombra como el primero
 				datos_principal = "DPRIM_0.txt";
-				return;
-				}else{								//De encontrarse un archivo, intenta cargar la ultima linea de datos
-				  
-					String decision = "NO";
-				  
-					while(true){
-						lcd.clear();          
-						lcd.setCursor(0,0);             
-						lcd.print("Desea cargar?");                  
-						lcd.setCursor(0,1);
-						lcd.print(decision);
-						est_encoder = encoder.read();
-						if(est_encoder != ultimo_est_encoder){
-							if(cargar){decision = "NO";}
-							if(!cargar){decision = "SI";}
-							cargar = !cargar;
-						}
-						
-						ultimo_est_encoder = est_encoder;
-						
-						if(digitalRead(sw) == 0){
-							if(cargar){
-								LCD_display("Cargando datos...");
-								break;
-								}
-							if(!cargar){return;}
-						}
-						
-						delay(150);
-					}
+			}else{
+				if( LCD_Leds.cargar() ){
+					cargar_datos();
+				}else{
+					datos_principal = "DPRIM_0.txt";
+					datos_secundario = "DSEC_0.txt";
 				}
+			}
 
-			datos = SD.open(datos_principal,FILE_READ);    //La variable "Archivo" Puede variar entre copias y el principal
+			return datos_principal, datos_secundario
+
+		}
+
+		void cargar_datos(String datos_principal){
+
+			File datos = SD.open(datos_principal,FILE_READ);    //La variable "Archivo" Puede variar entre copias y el principal
 			  
 			if(!datos){                                    //Comprueba si puede escribir a la SD, envía error si no fuese así
-				LCD_display("E3, E2");
+				LCD_Leds.display("E3, E2");
 				return;
 			}
 			  
@@ -117,10 +104,9 @@ Class Modulo_SD{
 			  
 			datos.close();
 			  
-			datos = SD.open(datos_principal,FILE_READ);    //La variable "Archivo" Puede variar entre copias y el principal
+			File datos = SD.open(datos_principal,FILE_READ);    //La variable "Archivo" Puede variar entre copias y el principal
 			  
 			if(!datos){                                    //Comprueba si puede escribir a la SD, envía error si no fuese así
-				LCD_display("E3, E2");
 				return;
 			}
 			  
@@ -134,51 +120,63 @@ Class Modulo_SD{
 				energia = datos.read();
 				velocidad = datos.read();
 				corriente_objetivo = datos.read();
-				constantes = true;
-			}else{
-				LCD_display("E3");
-				datos.close();
-				return;
-				}
+
+			}
 			  
 			datos.close();
-			LCD_display("Cargado con exito!");
-			
-			return posicion_principal, posicion_secundario;
+
+			return;
 			
 			}
 		
 		void SD_guardar (String archivo){		//Guardar datos en archivo txt
-  
-		File datos;                             //Crea el objeto "datos" para trabajar con la librería
-		  
-		if(!SD.begin(cs)){
-			LCD_display("E1");
+
+			if(!SD.begin(cs)){
+				LCD_Leds.display("E1");
+				return;
+			}
+			  
+			File datos = SD.open(archivo,FILE_WRITE);    //La variable "Archivo" Puede variar entre copias y el principal
+			  
+			if(!datos){                             //Comprueba si puede escribir a la SD, envía error si no fuese así
+				LCD_Leds.display("E2");
+				return;
+			}
+													  //Almacena las distintas variables separadas por una coma
+			datos.print(tiempo_transcurrido);
+			datos.print(",");
+			datos.print(tension);
+			datos.print(",");
+			datos.print(corriente);
+			datos.print(",");
+			datos.print(potencia);
+			datos.print(",");
+			datos.print(energia);
+			datos.print(",");
+			datos.print(velocidad);
+			datos.print(",");
+			datos.println(corriente_objetivo);
+			  
+			datos.close();                          //Cierra el archivo y vuelve al programa
 			return;
 		}
-		  
-		datos = SD.open(archivo,FILE_WRITE);    //La variable "Archivo" Puede variar entre copias y el principal
-		  
-		if(!datos){                             //Comprueba si puede escribir a la SD, envía error si no fuese así
-			LCD_display("E2");
-			return;
+
+		bool estado_prueba (){							//Configuracion de tiempo de la prueba, y cambio de archivos
+
+			if(guardar_secundario){
+				guardar_secundario = false;
+				posicion_secundario++;
+			    datos_secundario = "DSEC_";
+			    datos_secundario.concat(posicion_secundario);
+			    datos_secundario.concat(extension);	
+			}
+			if(!guardar_secundario){
+				guardar_secundario = true;
+				tiempo_objetivo = LCD_Leds.comenzar_prueba();
+				tiempo_inicio_prueba = millis();
+			}
+
+			return guardar_secundario;
 		}
-												  //Almacena las distintas variables separadas por una coma
-		datos.print(tiempo_transcurrido);
-		datos.print(",");
-		datos.print(tension);
-		datos.print(",");
-		datos.print(corriente);
-		datos.print(",");
-		datos.print(potencia);
-		datos.print(",");
-		datos.print(energia);
-		datos.print(",");
-		datos.print(velocidad);
-		datos.print(",");
-		datos.println(corriente_objetivo);
-		  
-		datos.close();                          //Cierra el archivo y vuelve al programa
-		return;
-		}
-}
+
+};

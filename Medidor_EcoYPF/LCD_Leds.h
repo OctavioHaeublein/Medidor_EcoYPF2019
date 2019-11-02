@@ -1,10 +1,10 @@
 class LCD_Leds{
 	
+	#include <LiquidCrystal_I2C.h>
+	#include <Wire.h>
+	#include <Encoder.h>
+
 	private:
-		
-		#include <LiquidCrystal_I2C.h>
-		#include <Wire.h>
-		#include <Encoder.h>
 
 		const int LA1 = 34;
 		const int LA2 = 36;

@@ -1,14 +1,15 @@
 class Modulo_SD{
 	
+	#include <SD.h>
+	#include <SPI.h>
+	#include "LCD_Leds.h"
+
 	private:
-		
-		#include <SD.h>
-		#include <SPI.h>
-		#include "LCD_Leds.h"
-		#define cs 9
-		
+
 		int posicion_principal = 0;			    	//Numero de archivo principal
 		int posicion_secundario = 0;				//Numero de archivo secundario
+		const int cs = 9;
+		LCD_Leds LCD_Leds;
 
 	public:
 	
@@ -131,7 +132,7 @@ class Modulo_SD{
 		
 		void SD_guardar (String archivo){		//Guardar datos en archivo txt
 
-			if(!SD.begin(cs)){
+			if(! SD.begin(cs) ){
 				LCD_Leds.display("E1");
 				return;
 			}

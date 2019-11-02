@@ -3,14 +3,18 @@
 #include "LCD_Leds.h"
 #include "Velocidad_Aceleracion.h"
 
+
+
 #define sensor_inductivo    2			//Pin de entrada del sensor inductivo
 float revoluciones = 0;		    		//Contador de revoluciones dadas por la rueda del auto
+
+LCD_Leds LCD_Leds;
 
 void setup() {
 
   pinMode(sensor_inductivo  , INPUT);	//Señal cuadrada para velocidad de la rueda
   
-  lcd.LCD_Leds.setup();
+  LCD_Leds.setup();
 
   datos_principal, datos_secundario = Modulo_SD.setup();
   

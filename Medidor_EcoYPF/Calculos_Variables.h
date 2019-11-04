@@ -1,4 +1,6 @@
-class Calculos{
+#include <Arduino.h>
+
+class Calculos_Variables{
 	
 	private:
 		
@@ -58,8 +60,13 @@ class Calculos{
 			soc_inicial = soc;
 			
 			soc = (soc * capacidad_baterias);
-			corriente_objetivo = (soc / (tiempo_objetivo/60));			//Divide la capacidad restante de la bateria (Ah) por el tiempo restante pasado a horas, para determinar la corriente para desarrollar
-			
+
+			if(tiempo_objetivo != 0){
+				corriente_objetivo = (soc / (tiempo_objetivo/60));			//Divide la capacidad restante de la bateria (Ah) por el tiempo restante pasado a horas, para determinar la corriente para desarrollar
+			}else{
+				corriente_objetivo = 0;
+			}
+						
 			return soc, corriente_objetivo;
 		}
 		
@@ -90,7 +97,12 @@ class Calculos{
 			sum_potencia   +=  potencia;											//Calcula la energia consumida hasta ese punto en funcion de la potencia y tiempo (watt - hora)
 			energia         = (sum_potencia * tiempo_transcurrido);
 			
-			soc, corriente_objetivo = calcular_capacidad(false);
+			if( corriente == 0 ){
+				soc, corriente_objetivo = calcular_capacidad(true);
+			}else{
+				soc, corriente_objetivo = calcular_capacidad(false);
+			}
+			
 			
 			return tension, corriente, potencia, energia, soc, corriente_objetivo;
 		}

@@ -1,10 +1,12 @@
+#include <Arduino.h>
+
 class Velocidad_Aceleracion{
 	private:
 		
 		/*--VARAIBLES ACELERADOR---*/
 		float entrada_acelerador = 0;			//Valor analogico de entrada del acelerador de puño
 		float salida_acelerador = 0;			//Valor analogico de salida hacia el controlador
-		String pwm_acelerador = "A0";
+		const int pwm_acelerador = 0;
 		
 		/*--VARIABLES VELOCIDAD---*/
 		float tiempo = 0;						//Tiempo (en ms) de cuando es llamada la funcion
@@ -30,12 +32,10 @@ class Velocidad_Aceleracion{
 	
 		float velocidad = 0;
 	
-		float calcular_velocidad(float revoluciones){
-
-			tiempo = millis();
+		float calcular_velocidad(float revoluciones, float tiempo_transcurrido){
 
 			revoluciones = (revoluciones / 2);
-			frecuencia += (revoluciones/((tiempo-tiempo_previo_velocidad)/1000));
+			frecuencia += (revoluciones/(tiempo_transcurrido/1000));
 			
 			tiempo_previo = tiempo;
 

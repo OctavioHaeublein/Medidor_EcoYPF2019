@@ -1,8 +1,9 @@
+#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
+#include <Encoder.h>
+#include <Arduino.h>
+
 class LCD_Leds{
-	
-	#include <LiquidCrystal_I2C.h>
-	#include <Wire.h>
-	#include <Encoder.h>
 
 	private:
 

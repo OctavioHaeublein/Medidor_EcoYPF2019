@@ -184,11 +184,11 @@ class Modulo_SD{
 			}
 			if(!guardar_secundario){
 				guardar_secundario = true;
-				//tiempo_objetivo = LCD_Leds.comenzar_prueba();
+				tiempo_objetivo = LCD_Leds.comenzar_prueba();
 				tiempo_inicio_prueba = millis();
 			}
 
-			return guardar_secundario;
+			return guardar_secundario, tiempo_objetivo, tiempo_inicio_prueba;
 		}
 
 };

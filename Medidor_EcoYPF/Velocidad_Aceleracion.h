@@ -81,13 +81,13 @@ class Velocidad_Aceleracion{
 			
 			switch(estado_acelerador){
 				
-				case 'm':
+				case 'M':
 
 					salida_acelerador = entrada_acelerador;
 
 					break;
 					
-				case 'a':
+				case 'A':
 
 					salida_pid = calculo_pid();
 					salida_acelerador = ((salida_pid * 120)/100);
@@ -98,7 +98,7 @@ class Velocidad_Aceleracion{
 
 				break;
 				
-				case 'c':
+				case 'C':
 
 					salida_acelerador = ((nivel_acelerador * 120)/100);
 					salida_acelerador += 70;

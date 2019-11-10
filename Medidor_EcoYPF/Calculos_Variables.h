@@ -14,10 +14,9 @@ class Calculos_Variables{
 		float sum_corriente = 0;				//Variable para la sumatoria de corriente en el tiempo
 		float soc_inicial = 1;					//Estado de carga inicial de las baterias 	(Medido con tension en vacio)
 		float soc_calculado = 0;				//Estado de bateria calculado por suma de corrientes
-		float contador_soc = 0;					//Contador para el calculo del soc 
 
-		float r1 = 1010000;
-		float r2 = 82100;
+		float r1 = 1010000;						//Valor medido de la primer resistencia del divisor resistivo
+		float r2 = 82100;						//Valor medido de la segunda resistencia del divisor resisistivo
 
 	public:
 		//FALTA SOLUCIONAR EL CALCULO DE LA ENERGIA DE ALGUNA FORMA
@@ -30,10 +29,6 @@ class Calculos_Variables{
 
 		float corriente_objetivo = 0;           //Corriente estimada que debera mantener para alcanzar el timepo objetivo
 		float soc = 0;							//Estado de carga actual de las baterias (soc_calculado - soc_inicial)
-		
-		float tiempo_objetivo = 0;
-		float tiempo_inicio_prueba = 0;
-		float tiempo_transcurrido = 0;
 
 		void setup(){
 						
@@ -47,15 +42,14 @@ class Calculos_Variables{
 			return ( (x-in_min)*(out_max - out_min) + (out_min * (in_max - in_min)) ) / (in_max - in_min);
 		}
 		
-		float calcular_capacidad (bool tabla){	//Calculo de capacidad restante de  la bateria y calculo por tabla
+		float calcular_capacidad (bool tabla, float sum_corriente, float tiempo_objetivo){	//Calculo de capacidad restante de  la bateria y calculo por tabla
 			
 			if(tabla){soc_inicial = map(tension,46.04,50.92,0.1,1);}
 			
-			soc_calculado = (-1/capacidad_baterias) * (tiempo_transcurrido * sum_corriente);
+			soc_calculado = ((-1/capacidad_baterias) * sum_corriente) ;
 			
 			soc = (soc_inicial - soc_calculado);
-			
-			contador_soc = 0;
+
 			sum_corriente = 0;
 			soc_inicial = soc;
 			
@@ -70,7 +64,7 @@ class Calculos_Variables{
 			return soc, corriente_objetivo;
 		}
 		
-		float calcular(){
+		float calcular(float tiempo_transcurrido, float tiempo_objetivo){
 			
 			/*---LECTURA DE SENSORES---*/
 			  
@@ -92,15 +86,14 @@ class Calculos_Variables{
 			if(tension_hall >= 525){     corriente 	      = interpolar (tension_hall, 525, 1023, 0, 70);}
 			else{if(tension_hall < 525){ corriente 	      = interpolar (tension_hall, 0, 525, 0, -70);}}
 			
-			sum_corriente  +=  corriente;
-			potencia        = (tension * corriente);								//Calcula la potencia en funcion de la corriente, y la tension medida en las baterias
-			sum_potencia   +=  potencia;											//Calcula la energia consumida hasta ese punto en funcion de la potencia y tiempo (watt - hora)
-			energia         = (sum_potencia * tiempo_transcurrido);
+			sum_corriente  +=  (corriente * tiempo_transcurrido);				//Calcula la corriente desarrollada en el tiempo para el calculo del SOC (Ampere - hora)
+			potencia        = (tension * corriente);							//Calcula la potencia en funcion de la corriente, y la tension medida en las baterias
+			energia        += (potencia * tiempo_transcurrido); 				//Calcula la energia consumida hasta ese punto en funcion de la potencia y tiempo (watt - hora)
 			
 			if( corriente == 0 ){
-				soc, corriente_objetivo = calcular_capacidad(true);
+				soc, corriente_objetivo = calcular_capacidad(true, sum_corriente);
 			}else{
-				soc, corriente_objetivo = calcular_capacidad(false);
+				soc, corriente_objetivo = calcular_capacidad(false, sum_corriente);
 			}
 			
 			

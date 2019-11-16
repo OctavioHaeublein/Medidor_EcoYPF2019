@@ -3,6 +3,8 @@
 #include <Encoder.h>
 #include <Arduino.h>
 
+LiquidCrystal_I2C lcd(0x27,20,4);   	//Crea el obtejo "lcd" y define la dirección de comunicación, y tamaño (20x4)
+
 class LCD_Leds{
 
 	private:
@@ -25,33 +27,35 @@ class LCD_Leds{
 		const int RGB_A = 6;
 		
 		const int boton_encoder = 3;
-		const int dt = 19;
-		const int clk = 18;
-		const int enable = 8;
+		const int dt = .0;
+		const int clk = 1;
 
 		float verde = 0;
 		float rojo = 0;
 		float azul = 0;
 		
-		int est_encoder = 0;
-		int ultimo_est_encoder = 0;
+		float est_encoder = 0;
+		float ultimo_est_encoder = 0;
 		
 	public:
 		
 		float tiempo_objetivo = 0;
 		bool cargar_datos = false;
+		
 
 		void setup(){
 			
 			/*---INICIO DE PROGRAMA---*/
-			Serial.begin(9600);          		//Inicia una comunicacion serial para edicion de codigo
+			Serial.begin(9600);          			//Inicia una comunicacion serial para edicion de codigo
 
 			/*---CONFIGURACION LCD---*/  
-			LiquidCrystal_I2C lcd(0x27,20,4);   //Crea el obtejo "lcd" y define la dirección de comunicación, y tamaño (20x4)
-			lcd.init();							//Inicio de la funcion lcd
+			lcd.init();								//Inicio de la funcion lcd
 			lcd.clear();							//Pone en blanco el lcd
 			lcd.backlight();						//Enciende el backlight del display
+			lcd.setCursor(0,0);
 			lcd.print("Cargando programa...");
+			lcd.setCursor(0,2);
+			lcd.print("Por favor espere");
 			  
 			/*---DIGITAL OUTPUTS---*/
 			pinMode(LR1 , OUTPUT);   				//LED Rojo1
@@ -77,14 +81,47 @@ class LCD_Leds{
 
 		}
 		
-		void datos (float tension, float corriente, float potencia, float energia, float soc, float corriente_objetivo, float velocidad){							//Layout principal para el display LCD
-			LiquidCrystal_I2C lcd(0x27,20,4);   	//Crea el obtejo "lcd" y define la dirección de comunicación, y tamaño (20x4)
+		void datos (float tension, float corriente, float potencia, float energia, float soc, float corriente_objetivo, float velocidad, String error, float tiempo_objetivo){							//Layout principal para el display LCD
 			lcd.clear();							//Pone en blanco el lcd
-			lcd.print("Cargando programa...");
+			lcd.setCursor(0,0);
+			lcd.print("V:");
+			lcd.print(velocidad);
+			lcd.setCursor(7,0);
+			lcd.print("Km/h");
+			lcd.setCursor(13,0);
+			lcd.print(error);
+			lcd.setCursor(0,1);
+			lcd.print("I:");
+			lcd.print(corriente);
+			lcd.setCursor(7,1);
+			lcd.print("A");
+			lcd.setCursor(11,1);
+			lcd.print(tiempo_objetivo);
+			lcd.setCursor(17,1);
+			lcd.print("MIN");
+			lcd.setCursor(0,2);
+			lcd.print("T:");
+			lcd.print(tension);
+			lcd.setCursor(7,2);
+			lcd.print("V");
+			lcd.setCursor(11,2);
+			lcd.print("C:");
+			lcd.print(soc);
+			lcd.setCursor(19,2);
+			lcd.print("%");
+			lcd.setCursor(0,3);
+			lcd.print("P:");
+			lcd.print(potencia);
+			lcd.setCursor(7,3);
+			lcd.print("W");
+			lcd.setCursor(11,3);
+			lcd.print("E:");
+			lcd.print(energia);
+			lcd.setCursor(18,3);
+			lcd.print("Wh");
 		}
 
 		void display (String palabra){			//Errores y otras cosas para mostrar en el display
-			LiquidCrystal_I2C lcd(0x27,20,4);   	//Crea el obtejo "lcd" y define la dirección de comunicación, y tamaño (20x4)
 			lcd.clear();                        	//Limpia el LCD de todo lo que tenga escrito
 			lcd.setCursor(0,0);                 	//Pone el cursor en el primer casillero de la primer fila
 			lcd.print(palabra);                   	//Escribe el error donde debería estar el cursor   
@@ -92,7 +129,6 @@ class LCD_Leds{
 		}
 
 		bool cargar(){
-			LiquidCrystal_I2C lcd(0x27,20,4);   	//Crea el obtejo "lcd" y define la dirección de comunicación, y tamaño (20x4)
 			lcd.clear();          
 			lcd.setCursor(0,0);             
 			lcd.print("¿Desea cargar?");                  
@@ -150,30 +186,67 @@ class LCD_Leds{
 		
 		float comenzar_prueba(){
 
-			Encoder encoder (dt,clk);
+			int counter = 0;
+			int aState;
+			int aLastState;
+			aLastState = digitalRead(dt);
+
+			lcd.clear();          
+			lcd.setCursor(0,0);
+			lcd.print("Tiempo (min): ");
+			lcd.setCursor(14,0);
+			lcd.print(tiempo_objetivo);
 
 			while(true){
-				
-				est_encoder = encoder.read();
+				aState = digitalRead(dt);
+				if(aState != aLastState){
+					if(digitalRead(clk) != aState){
+						tiempo_objetivo++;
+					}else{
+						tiempo_objetivo--;
+					}
 
-				if(est_encoder != ultimo_est_encoder){
-					display("Tiempo (min): " + est_encoder);
+					lcd.clear();          
+					lcd.setCursor(0,0);
+					lcd.print("Tiempo (min): ");
+					lcd.setCursor(14,0);
+					lcd.print(tiempo_objetivo);
+
 				}
+
+				aLastState = aState;
 			
-				ultimo_est_encoder = est_encoder;
-
 				if( digitalRead(boton_encoder) == 0 ){
-					tiempo_objetivo = est_encoder;
-				break;
+					break;
+				}
 			}
 
-			}
 
-			return tiempo_objetivo;
+			float tiempo_inicio_prueba = millis();
+
+			return tiempo_inicio_prueba, tiempo_objetivo;
 
 		}
 
 		void leds(float soc, float diferencia){							//Control de tira de LEDS y RGB 
+
+			int led = map(soc,0.1,1,0,9);
+			  
+			int leds[] = {LR1,LR2,LA1,LA2,LA3,LV1,LV2,LV3,LV4,LV5};
+			  
+			for(int i = 0; i<=9; i++){
+				digitalWrite(leds[i],LOW);
+			}
+
+			digitalWrite(led, HIGH);
+			
+		}
+		
+};
+
+
+/*
+void leds(float soc, float diferencia){							//Control de tira de LEDS y RGB 
 
 			int cantidad_leds = map(soc,0.1,1,0,9);
 			  
@@ -201,5 +274,4 @@ class LCD_Leds{
 			analogWrite(RGB_V , verde);
 			analogWrite(RGB_A , azul);
 		}
-		
-};
+*/

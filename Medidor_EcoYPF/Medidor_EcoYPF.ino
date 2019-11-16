@@ -29,6 +29,7 @@ float soc = 0;							//Estado de carga actual de las baterias (soc_calculado - s
 
 float tiempo_objetivo = 0;				//Tiempo establecido por el piloto para la competencia
 float tiempo_inicio_prueba = 0;			//Tiempo en el que se inicia el contador para el tiempo objetivo
+
 float tiempo_transcurrido = 0;			//Tiempo transcurrido entre mediciones para el calculo de energia y sum_corriente
 float tiempo_programa = 0;				//Tiempo para seguir la ultima vez que se llamo al metodo calcular	
 
@@ -37,52 +38,81 @@ float nivel_acelerador = 0;				//Nivel limite del acelerador (Entre 0 y 1)
 
 int muestreo = 1000;					//Tiempo de intervalo entre medidas
 
+String error = "";
+
+float minimo = 200;
+float tiempo_interrupt = 0;
+
 void setup() {
 
-  pinMode(sensor_inductivo  , INPUT);	//Señal cuadrada para velocidad de la rueda
-  
-  LCD_Leds.setup();
+  pinMode(sensor_inductivo  , INPUT);											//Señal cuadrada para velocidad de la rueda
+  pinMode(boton_encoder, INPUT_PULLUP);
+  Serial.begin(9600);
 
-  datos_principal, datos_secundario = Modulo_SD.setup();
-  
-  soc, corriente_objetivo = Calculos_Variables. calcular_capacidad(true);
+  LCD_Leds.setup();																//Declaracion inicial de salidas y entradas para el header
 
-  attachInterrupt(digitalPinToInterrupt(boton_encoder), blink, FALLING);
-  attachInterrupt(digitalPinToInterrupt(sensor_inductivo), blink, FALLING);
+  Calculos_Variables.setup();													//Declaracion inicial de salidas y entradas para el header
+
+  //Velocidad_Aceleracion.setup();												//Declaracion inicial de salidas y entradas para el header
+
+  datos_principal, datos_secundario, error = Modulo_SD.setup();						//Declaracion inicial de salidas y entradas para el header
+
+  attachInterrupt(digitalPinToInterrupt(boton_encoder), encoder, FALLING);		//Establecimiento de la interrupcion del boton del encoder para el programa
+  //attachInterrupt(digitalPinToInterrupt(sensor_inductivo), revolucion, FALLING);		//Establecimiento de la interrupcion del sensor inductivo para la velocidad
   
 }
 
-void loop() {														//Loop principal del programa
+void loop() {
 
-	Velocidad_Aceleracion.acelerador(estado_acelerador, nivel_acelerador);
+	//Velocidad_Aceleracion.acelerador(estado_acelerador, nivel_acelerador);
 
 	tiempo_transcurrido = (millis() - tiempo_programa);
 
 	if( tiempo_transcurrido >= muestreo ){
 
-		tension, corriente, potencia, energia, soc, corriente_objetivo = Calculos_Variables. calcular(tiempo_transcurrido, tiempo_objetivo);
+		detachInterrupt(digitalPinToInterrupt(boton_encoder));
+		//detachInterrupt(digitalPinToInterrupt(sensor_inductivo));
+
+		tension, corriente, potencia, energia, soc, corriente_objetivo, tiempo_objetivo = Calculos_Variables. calcular(tiempo_transcurrido, tiempo_objetivo);
+		velocidad = Velocidad_Aceleracion.calcular_velocidad(revoluciones, tiempo_transcurrido);
+		LCD_Leds.datos(tension, corriente, potencia, energia, soc, corriente_objetivo, velocidad, error, tiempo_objetivo);
+
+		revoluciones = 0;
 
 		if( (corriente != 0) || (velocidad != 0) ){
 			if(guardar_secundario){
-				Modulo_SD.SD_guardar(datos_principal, tiempo_transcurrido, tension, corriente, potencia, energia, velocidad, corriente_objetivo);
-				Modulo_SD.SD_guardar(datos_secundario, tiempo_transcurrido, tension, corriente, potencia, energia, velocidad, corriente_objetivo);
+				error = Modulo_SD.SD_guardar(datos_principal, tiempo_transcurrido, tension, corriente, potencia, energia, velocidad, corriente_objetivo);
+				error = Modulo_SD.SD_guardar(datos_secundario, tiempo_transcurrido, tension, corriente, potencia, energia, velocidad, corriente_objetivo);
 			}else{
-				Modulo_SD.SD_guardar(datos_principal, tiempo_transcurrido, tension, corriente, potencia, energia, velocidad, corriente_objetivo);
+				error = Modulo_SD.SD_guardar(datos_principal, tiempo_transcurrido, tension, corriente, potencia, energia, velocidad, corriente_objetivo);
 			}
 		}
 		
 		tiempo_programa = millis();
 
+		attachInterrupt(digitalPinToInterrupt(boton_encoder), encoder, FALLING);		//Establecimiento de la interrupcion del boton del encoder para el programa
+  		//attachInterrupt(digitalPinToInterrupt(sensor_inductivo), revolucion, FALLING);		//Establecimiento de la interrupcion del sensor inductivo para la velocidad
+
 	}
 
 }
 
-void blink(){											//Contador de revoluciones y boton del encoder
+void encoder(){
 
-  if(digitalRead(boton_encoder) == 0){					//Si se pone a 0 la entrada del boton, entonces alterna el valor del booleano
-	guardar_secundario, tiempo_objetivo, tiempo_inicio_prueba = Modulo_SD.estado_prueba();
-  }else{												//Si se pone en 0 la entrada del sensor optico, agrega una revolucion al contador
-		revoluciones++;		
+	if(millis() - tiempo_interrupt > minimo){
+		guardar_secundario = Modulo_SD.estado_prueba();
+		Serial.println(guardar_secundario);
+		if(guardar_secundario){
+			tiempo_inicio_prueba, tiempo_objetivo = LCD_Leds.comenzar_prueba();
 		}
+	}	
 
-}	
+	tiempo_interrupt = millis();
+}
+
+void revolucion(){
+
+	if(millis() - tiempo_interrupt > minimo){
+		revoluciones++;
+	}
+}

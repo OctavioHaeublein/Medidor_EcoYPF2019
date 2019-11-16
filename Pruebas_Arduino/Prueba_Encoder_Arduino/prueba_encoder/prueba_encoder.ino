@@ -1,8 +1,8 @@
 #include <LiquidCrystal_I2C.h>
 #include <Encoder.h>
 
-Encoder encoder(2,3);
-LiquidCrystal_I2C lcd(0x27,20,4);
+Encoder encoder(0,1);
+LiquidCrystal_I2C lcd(0x27,16,2);
 String posicion = "";
 
 void setup() {
@@ -10,8 +10,8 @@ void setup() {
   lcd.clear();
   lcd.backlight();
   Serial.begin(9600);
-  pinMode(2, INPUT);
-  pinMode(3, INPUT);
+  pinMode(0, INPUT);
+  pinMode(1, INPUT);
   pinMode(3, INPUT_PULLUP);
   
 }

@@ -8,7 +8,7 @@ class Modulo_SD{
 
 		int posicion_principal = 0;			    	//Numero de archivo principal
 		int posicion_secundario = 0;				//Numero de archivo secundario
-		const int cs = 9;
+		const int cs = 8;
 		File datos;
 
 	public:
@@ -16,9 +16,8 @@ class Modulo_SD{
 		String datos_principal = "DPRIM_";	    	//Nombre del archivo principal de adquisición de datos
 		String datos_secundario = "DSEC_";	    	//Nombre del archivo secundario
 		String extension = ".txt";			    	//Extensión del archivo para concatenarlos
-		bool guardar_secundario = false;			//Indica si deberan guardarse en archivo a parte los valores obtenidos
-
-		void cargar_datos(String datos_principal){
+		bool guardar_secundario = false;
+		String cargar_datos(String datos_principal){
 
 			float tiempo_transcurrido;
 			float tension;
@@ -31,8 +30,7 @@ class Modulo_SD{
 			datos = SD.open(datos_principal,FILE_READ);    //La variable "Archivo" Puede variar entre copias y el principal
 			  
 			if(!datos){                                    //Comprueba si puede escribir a la SD, envía error si no fuese así
-				//LCD_Leds.display("E3, E2");
-				return;
+				return "ERROR 3";
 			}
 			  
 			int posicion = 0;
@@ -50,7 +48,7 @@ class Modulo_SD{
 			datos = SD.open(datos_principal,FILE_READ);    //La variable "Archivo" Puede variar entre copias y el principal
 			  
 			if(!datos){                                    //Comprueba si puede escribir a la SD, envía error si no fuese así
-				return;
+				return "ERROR 3";
 			}
 			  
 			datos.seek(posicion);                          //Se desplaza hasta la posicion obtenida anteriormente
@@ -73,11 +71,9 @@ class Modulo_SD{
 			}
 
 		String setup(){								//Al inicio del programa busca datos anteriores para cargar
-
-			//LCD_Leds.display("Cargando...");		//Intenta comunicarse con el modulo SD
 			
 			if(!SD.begin(cs)){
-				return;
+				return datos_principal, datos_secundario, "ERROR 1";
 			}
 			
 			  
@@ -126,7 +122,7 @@ class Modulo_SD{
 			if(datos_principal == "DPRIM_"){		//Si no encuentra un archivo principal de datos, se nombra como el primero
 				datos_principal = "DPRIM_0.txt";
 			}else{
-				if( /*LCD_Leds.cargar()*/ true ){
+				if( /*LCD_Leds.cargar()*/ false ){
 					cargar_datos(datos_principal);
 				}else{
 					datos_principal = "DPRIM_0.txt";
@@ -134,22 +130,20 @@ class Modulo_SD{
 				}
 			}
 
-			return datos_principal, datos_secundario;
+			return datos_principal, datos_secundario, "";
 
 		}
 		
-		void SD_guardar (String archivo, float tiempo_transcurrido, float tension, float corriente, float potencia, float energia, float velocidad, float corriente_objetivo){		//Guardar datos en archivo txt
+		String SD_guardar (String archivo, float tiempo_transcurrido, float tension, float corriente, float potencia, float energia, float velocidad, float corriente_objetivo){		//Guardar datos en archivo txt
 
 			if(! SD.begin(cs) ){
-				//LCD_Leds.display("E1");
-				return;
+				return "ERROR 1";
 			}
 			  
 			datos = SD.open(archivo,FILE_WRITE);    //La variable "Archivo" Puede variar entre copias y el principal
 			  
 			if(!datos){                             //Comprueba si puede escribir a la SD, envía error si no fuese así
-				//LCD_Leds.display("E2");
-				return;
+				return "ERROR 2";
 			}
 													  //Almacena las distintas variables separadas por una coma
 			datos.print(tiempo_transcurrido);
@@ -172,23 +166,17 @@ class Modulo_SD{
 
 		bool estado_prueba (){							//Configuracion de tiempo de la prueba, y cambio de archivos
 
-			float tiempo_objetivo;
-			float tiempo_inicio_prueba;
-
 			if(guardar_secundario){
 				guardar_secundario = false;
 				posicion_secundario++;
 			    datos_secundario = "DSEC_";
 			    datos_secundario.concat(posicion_secundario);
 			    datos_secundario.concat(extension);	
-			}
-			if(!guardar_secundario){
+			}else{
 				guardar_secundario = true;
-				tiempo_objetivo = LCD_Leds.comenzar_prueba();
-				tiempo_inicio_prueba = millis();
 			}
 
-			return guardar_secundario, tiempo_objetivo, tiempo_inicio_prueba;
+			return guardar_secundario;
 		}
 
 };

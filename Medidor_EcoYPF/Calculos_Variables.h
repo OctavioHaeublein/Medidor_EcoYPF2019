@@ -32,7 +32,6 @@ class Calculos_Variables{
 
 		void setup(){
 						
-			/*---ANALOG INPUTS---*/
 			pinMode(A0,INPUT);    			//Nivel de tension de las baterias
 			pinMode(A1, INPUT);   			//Nivel de tension del sensor Hall
 			
@@ -86,18 +85,29 @@ class Calculos_Variables{
 			if(tension_hall >= 525){     corriente 	      = interpolar (tension_hall, 525, 1023, 0, 70);}
 			else{if(tension_hall < 525){ corriente 	      = interpolar (tension_hall, 0, 525, 0, -70);}}
 			
+			tiempo_transcurrido = (tiempo_transcurrido / 3600000);
+
 			sum_corriente  +=  (corriente * tiempo_transcurrido);				//Calcula la corriente desarrollada en el tiempo para el calculo del SOC (Ampere - hora)
 			potencia        = (tension * corriente);							//Calcula la potencia en funcion de la corriente, y la tension medida en las baterias
 			energia        += (potencia * tiempo_transcurrido); 				//Calcula la energia consumida hasta ese punto en funcion de la potencia y tiempo (watt - hora)
 			
-			if( corriente == 0 ){
-				soc, corriente_objetivo = calcular_capacidad(true, sum_corriente);
+			tiempo_transcurrido = (tiempo_transcurrido * 60);
+			Serial.println(tiempo_transcurrido);
+			if( (tiempo_objetivo - tiempo_transcurrido) > 0){
+				tiempo_objetivo = (tiempo_objetivo - tiempo_transcurrido);
+				Serial.println(tiempo_objetivo);
 			}else{
-				soc, corriente_objetivo = calcular_capacidad(false, sum_corriente);
+				tiempo_objetivo = 0;
+				}
+
+			if( corriente == 0 ){
+				soc, corriente_objetivo = calcular_capacidad(true, sum_corriente, tiempo_objetivo);
+			}else{
+				soc, corriente_objetivo = calcular_capacidad(false, sum_corriente, tiempo_objetivo);
 			}
 			
 			
-			return tension, corriente, potencia, energia, soc, corriente_objetivo;
+			return tension, corriente, potencia, energia, soc, corriente_objetivo, tiempo_objetivo;
 		}
 
 };

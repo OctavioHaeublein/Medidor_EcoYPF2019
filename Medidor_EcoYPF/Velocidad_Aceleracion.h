@@ -6,11 +6,9 @@ class Velocidad_Aceleracion{
 		/*--VARAIBLES ACELERADOR---*/
 		float entrada_acelerador = 0;			//Valor analogico de entrada del acelerador de puño
 		float salida_acelerador = 0;			//Valor analogico de salida hacia el controlador
-		const int pwm_acelerador = 0;
+		const int pwm_acelerador = 0;			//Pin de salida PWM para el acelerador del auto
 		
 		/*--VARIABLES VELOCIDAD---*/
-		float tiempo = 0;						//Tiempo (en ms) de cuando es llamada la funcion
-		float tiempo_previo= 0;					//Tiempo (en ms) de la ultima vez de la funcion
 		float frecuencia = 0;					//Frecuencia calculada
 		float diametro = 500;             	    //Diametro del eje (mm)
 
@@ -31,13 +29,15 @@ class Velocidad_Aceleracion{
 	public:
 	
 		float velocidad = 0;
+
+		void setup(){
+			pinMode(pwm_acelerador, OUTPUT);
+		}
 	
 		float calcular_velocidad(float revoluciones, float tiempo_transcurrido){
 
 			revoluciones = (revoluciones / 2);
 			frecuencia += (revoluciones/(tiempo_transcurrido/1000));
-			
-			tiempo_previo = tiempo;
 
 			velocidad = (((PI * diametro * frecuencia)/1000)*3.6);				//Calcula la velocidad de la rueda (Km/h)
 

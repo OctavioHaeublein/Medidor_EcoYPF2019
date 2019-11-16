@@ -34,14 +34,10 @@ class LCD_Leds{
 		float rojo = 0;
 		float azul = 0;
 		
-		float est_encoder = 0;
-		float ultimo_est_encoder = 0;
-		
 	public:
-		
-		float tiempo_objetivo = 0;
+
 		bool cargar_datos = false;
-		
+		float tiempo_objetivo = 0;
 
 		void setup(){
 			
@@ -53,9 +49,15 @@ class LCD_Leds{
 			lcd.clear();							//Pone en blanco el lcd
 			lcd.backlight();						//Enciende el backlight del display
 			lcd.setCursor(0,0);
-			lcd.print("Cargando programa...");
+			lcd.print("CARGANDO PROGRAMA...");
 			lcd.setCursor(0,2);
-			lcd.print("Por favor espere");
+			lcd.print("NO ACELERAR");
+
+			/*---ENCENDIDO DE LEDS---*/
+			int leds[] = {LR1,LR2,LA1,LA2,LA3,LV1,LV2,LV3,LV4,LV5};
+			for(int i = 0; i<=9; i++){
+				digitalWrite(leds[i],HIGH);
+			}
 			  
 			/*---DIGITAL OUTPUTS---*/
 			pinMode(LR1 , OUTPUT);   				//LED Rojo1
@@ -121,13 +123,8 @@ class LCD_Leds{
 			lcd.print("Wh");
 		}
 
-		void display (String palabra){			//Errores y otras cosas para mostrar en el display
-			lcd.clear();                        	//Limpia el LCD de todo lo que tenga escrito
-			lcd.setCursor(0,0);                 	//Pone el cursor en el primer casillero de la primer fila
-			lcd.print(palabra);                   	//Escribe el error donde debería estar el cursor   
-			return;
-		}
-
+		void display(String palabra){}
+/*
 		bool cargar(){
 			lcd.clear();          
 			lcd.setCursor(0,0);             
@@ -182,15 +179,13 @@ class LCD_Leds{
 
 			}
 
-		}
+		}*/
 		
 		float comenzar_prueba(){
 
-			int counter = 0;
-			int aState;
-			int aLastState;
-			aLastState = digitalRead(dt);
-
+			int aState = 0;
+			int aLastState = digitalRead(dt);
+			
 			lcd.clear();          
 			lcd.setCursor(0,0);
 			lcd.print("Tiempo (min): ");
@@ -198,7 +193,9 @@ class LCD_Leds{
 			lcd.print(tiempo_objetivo);
 
 			while(true){
+
 				aState = digitalRead(dt);
+
 				if(aState != aLastState){
 					if(digitalRead(clk) != aState){
 						tiempo_objetivo++;
@@ -217,23 +214,20 @@ class LCD_Leds{
 				aLastState = aState;
 			
 				if( digitalRead(boton_encoder) == 0 ){
+					delay(500);
 					break;
 				}
 			}
 
-
-			float tiempo_inicio_prueba = millis();
-
-			return tiempo_inicio_prueba, tiempo_objetivo;
+			return tiempo_objetivo;
 
 		}
 
-		void leds(float soc, float diferencia){							//Control de tira de LEDS y RGB 
+		void control_leds(float soc, float diferencia){							//Control de tira de LEDS y RGB 
 
 			int led = map(soc,0.1,1,0,9);
-			  
 			int leds[] = {LR1,LR2,LA1,LA2,LA3,LV1,LV2,LV3,LV4,LV5};
-			  
+
 			for(int i = 0; i<=9; i++){
 				digitalWrite(leds[i],LOW);
 			}

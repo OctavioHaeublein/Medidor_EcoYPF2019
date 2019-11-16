@@ -164,7 +164,7 @@ class Modulo_SD{
 			return;
 		}
 
-		bool estado_prueba (){							//Configuracion de tiempo de la prueba, y cambio de archivos
+		String estado_prueba (bool guardar_secundario){							//Configuracion de tiempo de la prueba, y cambio de archivos
 
 			if(guardar_secundario){
 				guardar_secundario = false;
@@ -176,7 +176,7 @@ class Modulo_SD{
 				guardar_secundario = true;
 			}
 
-			return guardar_secundario;
+			return datos_secundario;
 		}
 
 };

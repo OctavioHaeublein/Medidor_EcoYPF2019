@@ -8,11 +8,14 @@ Modulo_SD Modulo_SD;
 Calculos_Variables Calculos_Variables;
 Velocidad_Aceleracion Velocidad_Aceleracion;
 
-const int sensor_inductivo = 2;			//Pin de entrada del sensor inductivo
-
-String datos_principal;					//Variable para almacenar el nombre del archivo principal
-String datos_secundario;				//Variable para el nombre del archivo secundario
+int posicion_principal = 0;			    	//Numero de archivo principal
+int posicion_secundario = 0;				//Numero de archivo secundario
+String datos_principal = "DPRIM_";	    	//Nombre del archivo principal de adquisición de datos
+String datos_secundario = "DSEC_";	    	//Nombre del archivo secundario
+String extension = ".txt";			    	//Extensión del archivo para concatenarlos
 bool guardar_secundario = false;		//Booleano que indica si se deberan guardar en archivo a parte
+
+const int sensor_inductivo = 2;			//Pin de entrada del sensor inductivo
 
 const int boton_encoder = 3;			//Pin de entrada del boton del encoder
 
@@ -26,6 +29,7 @@ float velocidad = 0;            	    //Velocidad tangencial de la rueda (Km/h)
 
 float corriente_objetivo = 0;           //Corriente estimada que debera mantener para alcanzar el timepo objetivo
 float soc = 0;							//Estado de carga actual de las baterias (soc_calculado - soc_inicial)
+float diferencia = 0;					//Diferencia entre la corriente actual y la objetivo
 
 float tiempo_objetivo = 0;				//Tiempo establecido por el piloto para la competencia
 float tiempo_inicio_prueba = 0;			//Tiempo en el que se inicia el contador para el tiempo objetivo
@@ -76,6 +80,7 @@ void loop() {
 		tension, corriente, potencia, energia, soc, corriente_objetivo, tiempo_objetivo = Calculos_Variables. calcular(tiempo_transcurrido, tiempo_objetivo);
 		velocidad = Velocidad_Aceleracion.calcular_velocidad(revoluciones, tiempo_transcurrido);
 		LCD_Leds.datos(tension, corriente, potencia, energia, soc, corriente_objetivo, velocidad, error, tiempo_objetivo);
+		LCD_Leds.control_leds(soc, diferencia);
 
 		revoluciones = 0;
 
@@ -95,16 +100,25 @@ void loop() {
 
 	}
 
+	if(guardar_secundario){
+		
+		guardar_secundario = false;
+		posicion_secundario++;
+	    datos_secundario = "DSEC_";
+	    datos_secundario.concat(posicion_secundario);
+	    datos_secundario.concat(extension);
+	    Serial.println(guardar_secundario);	
+	    tiempo_objetivo = LCD_Leds.comenzar_prueba();
+	    delay(500);
+	}
+
 }
 
 void encoder(){
 
 	if(millis() - tiempo_interrupt > minimo){
-		guardar_secundario = Modulo_SD.estado_prueba();
+		guardar_secundario = true;
 		Serial.println(guardar_secundario);
-		if(guardar_secundario){
-			tiempo_inicio_prueba, tiempo_objetivo = LCD_Leds.comenzar_prueba();
-		}
 	}	
 
 	tiempo_interrupt = millis();
@@ -115,4 +129,5 @@ void revolucion(){
 	if(millis() - tiempo_interrupt > minimo){
 		revoluciones++;
 	}
+	tiempo_interrupt = millis();
 }

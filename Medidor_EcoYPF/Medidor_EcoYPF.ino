@@ -63,7 +63,8 @@ void loop() {
 		//detachInterrupt(digitalPinToInterrupt(sensor_inductivo));
 
 		tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa = Calculos_Variables. calcular(tiempo_transcurrido, tiempo_objetivo, revoluciones);
-		//Serial.println(tiempo_objetivo);
+		Serial.println(tiempo_objetivo);
+		Serial.println(tiempo_programa);
 		LCD_Leds.datos(tension, corriente, potencia, energia, soc, corriente_objetivo, velocidad, error, tiempo_objetivo);
 		LCD_Leds.control_leds(soc, diferencia);
 

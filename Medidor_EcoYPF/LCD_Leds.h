@@ -205,6 +205,9 @@ class LCD_Leds{
 						tiempo_objetivo++;
 					}else{
 						tiempo_objetivo--;
+						if(tiempo_objetivo < 0){
+							tiempo_objetivo = 0;
+						}
 					}
 
 					lcd.clear();          

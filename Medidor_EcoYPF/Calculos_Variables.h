@@ -106,12 +106,12 @@ class Calculos_Variables{
 			potencia        = (tension * (corriente/ 3600000));							//Calcula la potencia en funcion de la corriente, y la tension medida en las baterias
 			energia        += (potencia * (tiempo_transcurrido/ 3600000)); 				//Calcula la energia consumida hasta ese punto en funcion de la potencia y tiempo (watt - hora)
 
-			if( (tiempo_objetivo - (tiempo_transcurrido/60000)) > 0){
-				tiempo_objetivo = (tiempo_objetivo - tiempo_transcurrido);
-			}else{
-					tiempo_objetivo = 0;
-				}
+			tiempo_objetivo = (tiempo_objetivo - tiempo_transcurrido/60000);
+			tiempo_programa += (tiempo_transcurrido/60000);
 
+			if( tiempo_objetivo < 0){
+				tiempo_objetivo = 0;
+			}
 			if( corriente == 0 ){
 				soc, corriente_objetivo = calcular_capacidad(true, sum_corriente, tiempo_objetivo);
 			}else{
@@ -119,8 +119,6 @@ class Calculos_Variables{
 			}
 			
 			calcular_velocidad(revoluciones, tiempo_transcurrido);
-
-			tiempo_programa += tiempo_transcurrido;
 
 			Serial.println(tiempo_objetivo);
 

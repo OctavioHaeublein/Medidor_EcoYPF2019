@@ -8,29 +8,47 @@ class Modulo_SD{
 
 		int posicion_principal = 0;			    	//Numero de archivo principal
 		int posicion_secundario = 0;				//Numero de archivo secundario
-		const int cs = 8;
-		File datos;
-
-	public:
-	
 		String datos_principal = "DPRIM_";	    	//Nombre del archivo principal de adquisición de datos
 		String datos_secundario = "DSEC_";	    	//Nombre del archivo secundario
 		String extension = ".txt";			    	//Extensión del archivo para concatenarlos
 		bool guardar_secundario = false;
-		String cargar_datos(String datos_principal){
+		const int cs = 8;
+		File datos;
 
-			float tiempo_transcurrido;
-			float tension;
-			float corriente;
-			float potencia;
-			float energia;
-			float velocidad;
-			float corriente_objetivo;
+	public:
+		
+		float tension = 0;
+		float corriente = 0;
+		float potencia = 0;
+		float energia = 0;
+		float soc = 0;
+		float velocidad = 0;
+		float corriente_objetivo = 0;
+		float tiempo_objetivo = 0;
+		float tiempo_programa = 0;
+
+		float cargar_datos(bool cargar){
+
+			if( (!cargar) || (!SD.begin(cs)) ){
+				
+				posicion_principal++;
+			    datos_principal = "DPRIM_";
+			    datos_principal.concat(posicion_principal);
+			    datos_principal.concat(extension);
+			    Serial.println(datos_principal);
+			    posicion_secundario++;
+			    datos_secundario = "DSEC_";
+			    datos_secundario.concat(posicion_secundario);
+			    datos_secundario.concat(extension);	
+			    Serial.println(datos_secundario);
+				return;
+			}
 
 			datos = SD.open(datos_principal,FILE_READ);    //La variable "Archivo" Puede variar entre copias y el principal
 			  
 			if(!datos){                                    //Comprueba si puede escribir a la SD, envía error si no fuese así
-				return "ERROR 3";
+				Serial.println("ERROR 3");
+				return;
 			}
 			  
 			int posicion = 0;
@@ -48,32 +66,39 @@ class Modulo_SD{
 			datos = SD.open(datos_principal,FILE_READ);    //La variable "Archivo" Puede variar entre copias y el principal
 			  
 			if(!datos){                                    //Comprueba si puede escribir a la SD, envía error si no fuese así
-				return "ERROR 3";
+				Serial.println("ERROR 3");
+				return;
 			}
 			  
 			datos.seek(posicion);                          //Se desplaza hasta la posicion obtenida anteriormente
 			  
 			if(datos.available()){                         //Comienza a leer la ultima fila para obtener los datos guardados
-				tiempo_transcurrido = datos.read();
-				tension = datos.read();
-				corriente = datos.read();
-				potencia = datos.read();
-				energia = datos.read();
-				velocidad = datos.read();
-				corriente_objetivo = datos.read();
+
+				float tension = datos.read();
+				float corriente = datos.read();
+				float potencia = datos.read();
+				float energia = datos.read();
+				float soc = datos.read();
+				float velocidad = datos.read();
+				float corriente_objetivo = datos.read();
+				float tiempo_objetivo = datos.read();
+				float tiempo_programa = datos.read();
 
 			}
 			  
 			datos.close();
 
-			return;
+			return tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa;
 			
 			}
 
 		String setup(){								//Al inicio del programa busca datos anteriores para cargar
 			
 			if(!SD.begin(cs)){
-				return datos_principal, datos_secundario, "ERROR 1";
+				datos_principal = "DPRIM_0.txt";
+				datos_secundario = "DSEC_0.txt";
+				Serial.println("ERROR 1");
+				return datos_principal, datos_secundario;
 			}
 			
 			  
@@ -87,9 +112,7 @@ class Modulo_SD{
 				datos_principal.concat(extension);
 				
 				if( SD.exists(datos_principal) ){
-					posicion_principal = i;
-					datos_principal.concat(i);
-					datos_principal.concat(extension);
+					posicion_principal = (i-1);
 					break;					
 					}else{datos_principal = "DPRIM_";}
 				}else{datos_principal = "DPRIM_";}
@@ -107,8 +130,9 @@ class Modulo_SD{
 				
 				if( SD.exists(datos_secundario) ){
 					posicion_secundario = i;
-					datos_secundario.concat(i);
-					datos_secundario.concat(extension);
+				    datos_secundario = "DSEC_";
+				    datos_secundario.concat(posicion_secundario);
+				    datos_secundario.concat(extension);	
 					break;
 					}else{datos_secundario = "DSEC_";}
 				}else{datos_secundario = "DSEC_";}
@@ -122,31 +146,42 @@ class Modulo_SD{
 			if(datos_principal == "DPRIM_"){		//Si no encuentra un archivo principal de datos, se nombra como el primero
 				datos_principal = "DPRIM_0.txt";
 			}else{
-				if( /*LCD_Leds.cargar()*/ false ){
-					cargar_datos(datos_principal);
-				}else{
-					datos_principal = "DPRIM_0.txt";
-					datos_secundario = "DSEC_0.txt";
-				}
+				Serial.println(datos_principal);
+				posicion_principal++;
+			    datos_principal = "DPRIM_";
+			    datos_principal.concat(posicion_principal);
+			    datos_principal.concat(extension);
+			    Serial.println(datos_principal);
+
+				return datos_principal, datos_secundario;
 			}
 
-			return datos_principal, datos_secundario, "";
-
+			return datos_principal, datos_secundario;
 		}
 		
-		String SD_guardar (String archivo, float tiempo_transcurrido, float tension, float corriente, float potencia, float energia, float velocidad, float corriente_objetivo){		//Guardar datos en archivo txt
+		String SD_guardar (String archivo, float tension, float corriente, float potencia, float energia, float soc, float velocidad, float corriente_objetivo, float tiempo_objetivo, float tiempo_programa){		//Guardar datos en archivo txt
+
+			if(archivo == "1"){
+				archivo = datos_principal;
+			}else{
+				archivo = datos_secundario;
+			}
+
+			Serial.println(archivo);
 
 			if(! SD.begin(cs) ){
+				Serial.println("ERROR 1");
 				return "ERROR 1";
 			}
 			  
-			datos = SD.open(archivo,FILE_WRITE);    //La variable "Archivo" Puede variar entre copias y el principal
+			datos = SD.open(archivo,FILE_WRITE);    	//La variable "Archivo" Puede variar entre copias y el principal
 			  
-			if(!datos){                             //Comprueba si puede escribir a la SD, envía error si no fuese así
+			if(!datos){                             	//Comprueba si puede escribir a la SD, envía error si no fuese así
+				Serial.println("ERROR 2");
 				return "ERROR 2";
 			}
-													  //Almacena las distintas variables separadas por una coma
-			datos.print(tiempo_transcurrido);
+													 	 //Almacena las distintas variables separadas por una coma
+			datos.print(tiempo_programa);
 			datos.print(",");
 			datos.print(tension);
 			datos.print(",");
@@ -156,15 +191,20 @@ class Modulo_SD{
 			datos.print(",");
 			datos.print(energia);
 			datos.print(",");
+			datos.print(soc);
+			datos.print(",");
 			datos.print(velocidad);
 			datos.print(",");
-			datos.println(corriente_objetivo);
+			datos.print(corriente_objetivo);
+			datos.print(",");
+			datos.println(tiempo_objetivo);
 			  
 			datos.close();                          //Cierra el archivo y vuelve al programa
-			return;
+			
+			return "";
 		}
 
-		String estado_prueba (bool guardar_secundario){							//Configuracion de tiempo de la prueba, y cambio de archivos
+		void estado_prueba (){							//Configuracion de tiempo de la prueba, y cambio de archivos
 
 			if(guardar_secundario){
 				guardar_secundario = false;
@@ -176,7 +216,7 @@ class Modulo_SD{
 				guardar_secundario = true;
 			}
 
-			return datos_secundario;
+			return;
 		}
 
 };

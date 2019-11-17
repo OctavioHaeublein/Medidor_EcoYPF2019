@@ -4,12 +4,10 @@
  * ERROR 2 -> ERROR ABRIENDO ARCHIVO ESPECIFICADO EN SD
  * ERROR 3 -> ERROR LEYENDO CONSTANTES DESDE ARCHIVO
  * ERROR 4 -> NO MIDE TENSION
- * ERROR 5 -> NO MIDE CORRIENTE
- * ERROR 6 -> NO MIDE VELOCIDAD
+ * ERROR 5 -> NO MIDE VELOCIDAD
+ * ERROR 6 -> 
 
 
 /***TO-DO***/
  * Corregir mapeo de corriente de acuerdo a los limites del sensor hall utilizado
- * Agregar variables al display para que se vean
  * Calcular distanica recorrida de la rueda en funcion de la velocidad y tiempo en python
- * Cambiar los datos que se cargan al inicio del programa a solo los escenciales (Void cargar_datos)

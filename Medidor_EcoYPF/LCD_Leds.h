@@ -37,7 +37,6 @@ class LCD_Leds{
 	public:
 
 		bool cargar_datos = false;
-		float tiempo_objetivo = 0;
 
 		void setup(){
 			
@@ -84,6 +83,7 @@ class LCD_Leds{
 		}
 		
 		void datos (float tension, float corriente, float potencia, float energia, float soc, float corriente_objetivo, float velocidad, String error, float tiempo_objetivo){							//Layout principal para el display LCD
+			//Serial.println(tiempo_objetivo);
 			lcd.clear();							//Pone en blanco el lcd
 			lcd.setCursor(0,0);
 			lcd.print("V:");
@@ -123,69 +123,73 @@ class LCD_Leds{
 			lcd.print("Wh");
 		}
 
-		void display(String palabra){}
-/*
 		bool cargar(){
-			lcd.clear();          
+
+			lcd.clear();  
 			lcd.setCursor(0,0);             
-			lcd.print("¿Desea cargar?");                  
-			lcd.setCursor(0,1);
+			lcd.print("Datos encontrados.");          
+			lcd.setCursor(0,2);             
+			lcd.print("Desea cargar?");                  
+			lcd.setCursor(0,3);
 			lcd.print("   NO          SI   ");
 
-			Encoder encoder (dt,clk);
+			int aState = 0;
+			int aLastState = digitalRead(dt);
 
 			while(true){
 			
-				est_encoder = encoder.read();
+				aState = digitalRead(dt);
 
-				if(est_encoder > ultimo_est_encoder){
-					
-					lcd.clear();          
-					lcd.setCursor(0,0);             
-					lcd.print("¿Desea cargar?");                  
-					lcd.setCursor(0,1);
-					lcd.print("   NO         >SI   ");
-
-					cargar_datos = true;
+				if(aState != aLastState){
+					if(digitalRead(clk) != aState){
+						lcd.clear();  
+						lcd.setCursor(0,0);             
+						lcd.print("Datos encontrados.");          
+						lcd.setCursor(0,2);             
+						lcd.print("Desea cargar?");                  
+						lcd.setCursor(0,3);
+						lcd.print("   NO         >SI   ");
+						cargar_datos = true;
+					}else{
+						lcd.clear(); 
+						lcd.setCursor(0,0);             
+						lcd.print("Datos encontrados.");          
+						lcd.setCursor(0,2);             
+						lcd.print("Desea cargar?");                  
+						lcd.setCursor(0,3);
+						lcd.print("   >NO         SI   ");
+						cargar_datos = false;
+					}
 				}
 
-				if(est_encoder < ultimo_est_encoder){
-
-					lcd.clear();          
-					lcd.setCursor(0,0);             
-					lcd.print("¿Desea cargar?");                  
-					lcd.setCursor(0,1);
-					lcd.print("  >NO          SI   ");
-					
-					cargar_datos = false;
-
-				}
-				
-				ultimo_est_encoder = est_encoder;
+				aLastState = aState;
 				
 				if(digitalRead(boton_encoder) == 0){
-					if(cargar_datos){
-						display("Cargando datos...");
-						delay(500);
-						}
+					
+					lcd.clear();          
+					lcd.setCursor(0,0);
 
+					if(cargar_datos){
+						lcd.print("Cargando datos...");
+					}
 					if(!cargar_datos){
-						display("Comenzando de cero.");
-						delay(500);
+						lcd.print("Comenzando de cero.");
 					}
 
+					delay(500);
 					return cargar_datos;
 				}
 
 			}
 
-		}*/
+		}
 		
 		float comenzar_prueba(){
 
 			int aState = 0;
 			int aLastState = digitalRead(dt);
-			
+			float tiempo_objetivo = 0;
+
 			lcd.clear();          
 			lcd.setCursor(0,0);
 			lcd.print("Tiempo (min): ");
@@ -214,7 +218,7 @@ class LCD_Leds{
 				aLastState = aState;
 			
 				if( digitalRead(boton_encoder) == 0 ){
-					delay(500);
+					delay(250);
 					break;
 				}
 			}

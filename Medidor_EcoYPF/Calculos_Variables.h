@@ -18,22 +18,24 @@ class Calculos_Variables{
 		float r1 = 1010000;						//Valor medido de la primer resistencia del divisor resistivo
 		float r2 = 82100;						//Valor medido de la segunda resistencia del divisor resisistivo
 
+		float frecuencia = 0;					//Frecuencia calculada
+		float diametro = 500;             	    //Diametro del eje (mm)
+
 	public:
-		//FALTA SOLUCIONAR EL CALCULO DE LA ENERGIA DE ALGUNA FORMA
-		
+
 		float tension = 0;              	    //Nivel de tension de las baterias
 		float corriente = 0;            	    //Corriente calculada del motor (Depende si carga, o no lo hace)
 		float potencia = 0;             	    //Potencia del motor
 		float energia = 0;              	    //Energia consumida por el motor
 		float velocidad = 0;            	    //Velocidad tangencial de la rueda (Km/h)
-
+		float tiempo_programa = 0;
 		float corriente_objetivo = 0;           //Corriente estimada que debera mantener para alcanzar el timepo objetivo
 		float soc = 0;							//Estado de carga actual de las baterias (soc_calculado - soc_inicial)
 
 		void setup(){
 						
-			pinMode(A0,INPUT);    			//Nivel de tension de las baterias
-			pinMode(A1, INPUT);   			//Nivel de tension del sensor Hall
+			pinMode(A0,INPUT);    				//Nivel de tension de las baterias
+			pinMode(A1, INPUT);   				//Nivel de tension del sensor Hall
 			
 		}
 
@@ -63,7 +65,19 @@ class Calculos_Variables{
 			return soc, corriente_objetivo;
 		}
 		
-		float calcular(float tiempo_transcurrido, float tiempo_objetivo){
+		float calcular_velocidad(float revoluciones, float tiempo_transcurrido){
+
+			revoluciones = (revoluciones / 2);
+			frecuencia += (revoluciones/(tiempo_transcurrido/1000));
+
+			velocidad = (((PI * diametro * frecuencia)/1000)*3.6);				//Calcula la velocidad de la rueda (Km/h)
+
+			frecuencia = 0;
+			
+			return velocidad;
+		}
+
+		float calcular(float tiempo_transcurrido, float tiempo_objetivo, float revoluciones){
 			
 			/*---LECTURA DE SENSORES---*/
 			  
@@ -82,32 +96,35 @@ class Calculos_Variables{
 			  
 			tension_hall    = (tension_hall / 10); 										//Mapea los niveles de tension medidos por el sensor hall
 			  
-			if(tension_hall >= 525){     corriente 	      = interpolar (tension_hall, 525, 1023, 0, 70);}
-			else{if(tension_hall < 525){ corriente 	      = interpolar (tension_hall, 0, 525, 0, -70);}}
-			
-			tiempo_transcurrido = (tiempo_transcurrido / 3600000);
+			if(tension_hall >= 525){     
+				corriente = interpolar (tension_hall, 525, 1023, 0, 70);
+			}else{
+					corriente = interpolar (tension_hall, 0, 525, 0, -70);
+				}
 
 			sum_corriente  +=  (corriente * tiempo_transcurrido);				//Calcula la corriente desarrollada en el tiempo para el calculo del SOC (Ampere - hora)
-			potencia        = (tension * corriente);							//Calcula la potencia en funcion de la corriente, y la tension medida en las baterias
-			energia        += (potencia * tiempo_transcurrido); 				//Calcula la energia consumida hasta ese punto en funcion de la potencia y tiempo (watt - hora)
-			
-			tiempo_transcurrido = (tiempo_transcurrido * 60);
-			Serial.println(tiempo_transcurrido);
-			if( (tiempo_objetivo - tiempo_transcurrido) > 0){
+			potencia        = (tension * (corriente/ 3600000));							//Calcula la potencia en funcion de la corriente, y la tension medida en las baterias
+			energia        += (potencia * (tiempo_transcurrido/ 3600000)); 				//Calcula la energia consumida hasta ese punto en funcion de la potencia y tiempo (watt - hora)
+
+			if( (tiempo_objetivo - (tiempo_transcurrido/60000)) > 0){
 				tiempo_objetivo = (tiempo_objetivo - tiempo_transcurrido);
-				Serial.println(tiempo_objetivo);
 			}else{
-				tiempo_objetivo = 0;
+					tiempo_objetivo = 0;
 				}
 
 			if( corriente == 0 ){
 				soc, corriente_objetivo = calcular_capacidad(true, sum_corriente, tiempo_objetivo);
 			}else{
-				soc, corriente_objetivo = calcular_capacidad(false, sum_corriente, tiempo_objetivo);
+					soc, corriente_objetivo = calcular_capacidad(false, sum_corriente, tiempo_objetivo);
 			}
 			
-			
-			return tension, corriente, potencia, energia, soc, corriente_objetivo, tiempo_objetivo;
+			calcular_velocidad(revoluciones, tiempo_transcurrido);
+
+			tiempo_programa += tiempo_transcurrido;
+
+			Serial.println(tiempo_objetivo);
+
+			return tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa;
 		}
 
 };

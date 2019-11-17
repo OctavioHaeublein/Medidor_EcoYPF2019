@@ -8,15 +8,7 @@ Modulo_SD Modulo_SD;
 Calculos_Variables Calculos_Variables;
 Velocidad_Aceleracion Velocidad_Aceleracion;
 
-int posicion_principal = 0;			    	//Numero de archivo principal
-int posicion_secundario = 0;				//Numero de archivo secundario
-String datos_principal = "DPRIM_";	    	//Nombre del archivo principal de adquisición de datos
-String datos_secundario = "DSEC_";	    	//Nombre del archivo secundario
-String extension = ".txt";			    	//Extensión del archivo para concatenarlos
-bool guardar_secundario = false;		//Booleano que indica si se deberan guardar en archivo a parte
-
 const int sensor_inductivo = 2;			//Pin de entrada del sensor inductivo
-
 const int boton_encoder = 3;			//Pin de entrada del boton del encoder
 
 float revoluciones = 0;		    		//Contador de revoluciones dadas por la rueda del auto
@@ -32,43 +24,36 @@ float soc = 0;							//Estado de carga actual de las baterias (soc_calculado - s
 float diferencia = 0;					//Diferencia entre la corriente actual y la objetivo
 
 float tiempo_objetivo = 0;				//Tiempo establecido por el piloto para la competencia
-float tiempo_inicio_prueba = 0;			//Tiempo en el que se inicia el contador para el tiempo objetivo
-
 float tiempo_transcurrido = 0;			//Tiempo transcurrido entre mediciones para el calculo de energia y sum_corriente
-float tiempo_programa = 0;				//Tiempo para seguir la ultima vez que se llamo al metodo calcular	
-
-char estado_acelerador = 'M';			//Estado del acelerador ('M'anual, 'A'utomatico, 'C'rucero)
-float nivel_acelerador = 0;				//Nivel limite del acelerador (Entre 0 y 1)
+float tiempo_programa = 0;				//Tiempo transcurrido en minutos del funcionamiento del programa
+float tiempo_previo = 0;				//Tiempo para seguir la ultima vez que se llamo al metodo calcular	
 
 int muestreo = 1000;					//Tiempo de intervalo entre medidas
 
-String error = "";
+String error = "";						//Variable para disponer de un manejo de errores que se muestre en el LCD
 
-float minimo = 200;
-float tiempo_interrupt = 0;
+float minimo = 200;						//Intervalo minimo de tiempo entre interrupciones (Evitar ruido)
+float tiempo_interrupt = 0;				//Tiempo transcurrido entre interrupciones
+bool boton_apretado = false;			//Si el boton del encoder fue apretado
 
 void setup() {
 
-  pinMode(sensor_inductivo  , INPUT);											//Señal cuadrada para velocidad de la rueda
-  pinMode(boton_encoder, INPUT_PULLUP);
-  Serial.begin(9600);
+	pinMode(sensor_inductivo  , INPUT);											//Señal cuadrada para velocidad de la rueda
+	pinMode(boton_encoder, INPUT_PULLUP);										//Señal de entrada para el boton del encoder
+	Serial.begin(9600);															//Inicio de comunicacion serial para identificacion de errores
 
-  LCD_Leds.setup();																//Declaracion inicial de salidas y entradas para el header
+	LCD_Leds.setup();															//Declaracion inicial de salidas y entradas para el header
 
-  Calculos_Variables.setup();													//Declaracion inicial de salidas y entradas para el header
+	Calculos_Variables.setup();													//Declaracion inicial de salidas y entradas para el header
 
-  //Velocidad_Aceleracion.setup();												//Declaracion inicial de salidas y entradas para el header
+	Modulo_SD.setup();															//Declaracion inicial de salidas y entradas para el header
 
-  datos_principal, datos_secundario, error = Modulo_SD.setup();						//Declaracion inicial de salidas y entradas para el header
+	attachInterrupt(digitalPinToInterrupt(boton_encoder), blink, FALLING);		//Establecimiento de la interrupcion del boton del encoder para el programa
+	//attachInterrupt(digitalPinToInterrupt(sensor_inductivo), blink, FALLING);	//Establecimiento de la interrupcion del sensor inductivo para la velocidad
 
-  attachInterrupt(digitalPinToInterrupt(boton_encoder), encoder, FALLING);		//Establecimiento de la interrupcion del boton del encoder para el programa
-  //attachInterrupt(digitalPinToInterrupt(sensor_inductivo), revolucion, FALLING);		//Establecimiento de la interrupcion del sensor inductivo para la velocidad
-  
 }
 
 void loop() {
-
-	//Velocidad_Aceleracion.acelerador(estado_acelerador, nivel_acelerador);
 
 	tiempo_transcurrido = (millis() - tiempo_programa);
 
@@ -77,57 +62,72 @@ void loop() {
 		detachInterrupt(digitalPinToInterrupt(boton_encoder));
 		//detachInterrupt(digitalPinToInterrupt(sensor_inductivo));
 
-		tension, corriente, potencia, energia, soc, corriente_objetivo, tiempo_objetivo = Calculos_Variables. calcular(tiempo_transcurrido, tiempo_objetivo);
-		velocidad = Velocidad_Aceleracion.calcular_velocidad(revoluciones, tiempo_transcurrido);
+		tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa = Calculos_Variables. calcular(tiempo_transcurrido, tiempo_objetivo, revoluciones);
+		//Serial.println(tiempo_objetivo);
 		LCD_Leds.datos(tension, corriente, potencia, energia, soc, corriente_objetivo, velocidad, error, tiempo_objetivo);
 		LCD_Leds.control_leds(soc, diferencia);
 
 		revoluciones = 0;
 
-		if( (corriente != 0) || (velocidad != 0) ){
-			if(guardar_secundario){
-				error = Modulo_SD.SD_guardar(datos_principal, tiempo_transcurrido, tension, corriente, potencia, energia, velocidad, corriente_objetivo);
-				error = Modulo_SD.SD_guardar(datos_secundario, tiempo_transcurrido, tension, corriente, potencia, energia, velocidad, corriente_objetivo);
+		error = Modulo_SD.SD_guardar("1", tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa);
+		if(tiempo_objetivo > 0){
+			error = Modulo_SD.SD_guardar("2", tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa);
+		}else{
+			Modulo_SD.estado_prueba();
+		}
+
+
+		if( ((corriente != 0) || (velocidad != 0)) && ((error != "ERROR 1") || (error != "ERROR 1") || (error != "ERROR 1")) ){
+			error = Modulo_SD.SD_guardar("1", tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa);
+			if(tiempo_objetivo > 0){
+				error = Modulo_SD.SD_guardar("2", tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa);
 			}else{
-				error = Modulo_SD.SD_guardar(datos_principal, tiempo_transcurrido, tension, corriente, potencia, energia, velocidad, corriente_objetivo);
+				Modulo_SD.estado_prueba();
 			}
 		}
 		
 		tiempo_programa = millis();
 
-		attachInterrupt(digitalPinToInterrupt(boton_encoder), encoder, FALLING);		//Establecimiento de la interrupcion del boton del encoder para el programa
-  		//attachInterrupt(digitalPinToInterrupt(sensor_inductivo), revolucion, FALLING);		//Establecimiento de la interrupcion del sensor inductivo para la velocidad
+		attachInterrupt(digitalPinToInterrupt(boton_encoder), blink, FALLING);		//Establecimiento de la interrupcion del boton del encoder para el programa
+  		//attachInterrupt(digitalPinToInterrupt(sensor_inductivo), blink, FALLING);		//Establecimiento de la interrupcion del sensor inductivo para la velocidad
 
 	}
 
-	if(guardar_secundario){
-		
-		guardar_secundario = false;
-		posicion_secundario++;
-	    datos_secundario = "DSEC_";
-	    datos_secundario.concat(posicion_secundario);
-	    datos_secundario.concat(extension);
-	    Serial.println(guardar_secundario);	
+	if(boton_apretado){
+		detachInterrupt(digitalPinToInterrupt(boton_encoder));
+		delay(250);
+		boton_apretado = !boton_apretado;
+	    Modulo_SD.estado_prueba();
 	    tiempo_objetivo = LCD_Leds.comenzar_prueba();
-	    delay(500);
+	    delay(250);
+	    attachInterrupt(digitalPinToInterrupt(boton_encoder), blink, FALLING);		//Establecimiento de la interrupcion del boton del encoder para el programa
 	}
 
 }
 
-void encoder(){
+void blink(){
 
 	if(millis() - tiempo_interrupt > minimo){
-		guardar_secundario = true;
-		Serial.println(guardar_secundario);
+		if(digitalRead(boton_encoder) == 0){
+			boton_apretado = !boton_apretado;
+		}else{
+			revoluciones++;
+		}
 	}	
-
 	tiempo_interrupt = millis();
 }
 
-void revolucion(){
 
-	if(millis() - tiempo_interrupt > minimo){
-		revoluciones++;
-	}
-	tiempo_interrupt = millis();
-}
+
+/*
+
+
+		if( (tension > 65) || (tension < 40) ){
+				error = "ERROR 4";
+		}
+
+		if( (corriente != 0) && (velocidad == 0)){
+				error = "ERROR 5";
+		}
+
+*/

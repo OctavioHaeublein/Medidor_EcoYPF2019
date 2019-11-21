@@ -1,0 +1,13 @@
+/***POSBLES ERRORES***/
+
+ * ERROR 1 -> ERROR COMUNICANDO CON EL MODULO SD
+ * ERROR 2 -> ERROR ABRIENDO ARCHIVO ESPECIFICADO EN SD
+ * ERROR 3 -> ERROR LEYENDO CONSTANTES DESDE ARCHIVO
+ * ERROR 4 -> NO MIDE TENSION
+ * ERROR 5 -> NO MIDE VELOCIDAD
+ * ERROR 6 -> 
+
+
+/***TO-DO***/
+ * Corregir mapeo de corriente de acuerdo a los limites del sensor hall utilizado
+ * Calcular distanica recorrida de la rueda en funcion de la velocidad y tiempo en python

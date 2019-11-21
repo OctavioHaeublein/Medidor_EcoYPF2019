@@ -28,7 +28,7 @@ class Calculos_Variables{
 		float potencia = 0;             	    //Potencia del motor
 		float energia = 0;              	    //Energia consumida por el motor
 		float velocidad = 0;            	    //Velocidad tangencial de la rueda (Km/h)
-		//float tiempo_objetivo = 0;
+		float tiempo_objetivo = 0;
 		float tiempo_programa = 0;
 		float corriente_objetivo = 0;           //Corriente estimada que debera mantener para alcanzar el timepo objetivo
 		float soc = 0;							//Estado de carga actual de las baterias (soc_calculado - soc_inicial)
@@ -107,8 +107,12 @@ class Calculos_Variables{
 			potencia        = (tension * (corriente/ 3600000));							//Calcula la potencia en funcion de la corriente, y la tension medida en las baterias
 			energia        += (potencia * (tiempo_transcurrido/ 3600000)); 				//Calcula la energia consumida hasta ese punto en funcion de la potencia y tiempo (watt - hora)
 
+			tiempo_objetivo = (tiempo_objetivo - tiempo_transcurrido/60000);
 			tiempo_programa += (tiempo_transcurrido/60000);
 
+			if( tiempo_objetivo < 0){
+				tiempo_objetivo = 0;
+			}
 			if( corriente == 0 ){
 				soc, corriente_objetivo = calcular_capacidad(true, sum_corriente, tiempo_objetivo);
 			}else{
@@ -117,7 +121,10 @@ class Calculos_Variables{
 			
 			calcular_velocidad(revoluciones, tiempo_transcurrido);
 
-			return tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_programa;
+			Serial.print("tiempo_objetivo: ");
+			Serial.println(tiempo_objetivo);
+
+			return tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa;
 		}
 
 };

@@ -130,7 +130,7 @@ class LCD_Leds{
 			lcd.setCursor(0,2);             
 			lcd.print("Desea cargar?");                  
 			lcd.setCursor(0,3);
-			lcd.print("  >NO          SI   ");
+			lcd.print("   NO          SI   ");
 
 			int aState = 0;
 			int aLastState = digitalRead(dt);

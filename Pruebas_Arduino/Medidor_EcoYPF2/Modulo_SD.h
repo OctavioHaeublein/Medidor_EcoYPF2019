@@ -27,6 +27,8 @@ class Modulo_SD{
 		float tiempo_objetivo = 0;
 		float tiempo_programa = 0;
 
+		
+
 		String setup( bool cargar){								//Al inicio del programa busca datos anteriores para cargar
 			
 			if(!SD.begin(cs)){
@@ -58,7 +60,7 @@ class Modulo_SD{
 				datos_secundario.concat(i);
 				datos_secundario.concat(extension);
 				
-				if(!SD.exists(datos_secundario)){
+				if(!SD.exists(datos_secundario){
 					datos_secundario = "DSEC_";
 					datos_secundario.concat(i-1);
 					datos_secundario.concat(extension);
@@ -88,7 +90,7 @@ class Modulo_SD{
 				    datos_principal.concat(extension);
 				}
 			}
-			Serial.print("Setup: ");
+			Serial.print("Setup");
 			Serial.println(datos_principal);
 			Serial.println(datos_secundario);
 			Serial.println(cargar);

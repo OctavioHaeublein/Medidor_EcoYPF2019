@@ -46,7 +46,7 @@ void setup() {
 
 	Calculos_Variables.setup();													//Declaracion inicial de salidas y entradas para el header
 
-	Modulo_SD.setup();															//Declaracion inicial de salidas y entradas para el header
+	Modulo_SD.setup(LCD_Leds.cargar());															//Declaracion inicial de salidas y entradas para el header
 
 	attachInterrupt(digitalPinToInterrupt(boton_encoder), blink, FALLING);		//Establecimiento de la interrupcion del boton del encoder para el programa
 	//attachInterrupt(digitalPinToInterrupt(sensor_inductivo), blink, FALLING);	//Establecimiento de la interrupcion del sensor inductivo para la velocidad
@@ -62,28 +62,38 @@ void loop() {
 		detachInterrupt(digitalPinToInterrupt(boton_encoder));
 		//detachInterrupt(digitalPinToInterrupt(sensor_inductivo));
 
-		tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa = Calculos_Variables. calcular(tiempo_transcurrido, tiempo_objetivo, revoluciones);
-		Serial.println(tiempo_objetivo);
-		Serial.println(tiempo_programa);
+		tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_programa = Calculos_Variables. calcular(tiempo_transcurrido, tiempo_objetivo, revoluciones);
+
 		LCD_Leds.datos(tension, corriente, potencia, energia, soc, corriente_objetivo, velocidad, error, tiempo_objetivo);
 		LCD_Leds.control_leds(soc, diferencia);
 
 		revoluciones = 0;
 
 		error = Modulo_SD.SD_guardar("1", tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa);
+		
 		if(tiempo_objetivo > 0){
-			error = Modulo_SD.SD_guardar("2", tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa);
-		}else{
-			Modulo_SD.estado_prueba();
-		}
+			tiempo_objetivo = (tiempo_objetivo - (tiempo_transcurrido/60000));
+				
+				if( tiempo_objetivo < 0){
+					tiempo_objetivo = 0;
+					Modulo_SD.estado_prueba();
+				}
 
+			error = Modulo_SD.SD_guardar("2", tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa);
+		}
 
 		if( ((corriente != 0) || (velocidad != 0)) && ((error != "ERROR 1") || (error != "ERROR 1") || (error != "ERROR 1")) ){
 			error = Modulo_SD.SD_guardar("1", tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa);
 			if(tiempo_objetivo > 0){
+				
 				error = Modulo_SD.SD_guardar("2", tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa);
-			}else{
-				Modulo_SD.estado_prueba();
+
+				tiempo_objetivo = (tiempo_objetivo - tiempo_transcurrido/60000);
+				
+				if( tiempo_objetivo < 0){
+					tiempo_objetivo = 0;
+					Modulo_SD.estado_prueba();
+				}
 			}
 		}
 		

@@ -110,7 +110,8 @@ void loop() {
 		boton_apretado = !boton_apretado;
 	    Modulo_SD.estado_prueba();
 	    tiempo_objetivo = LCD_Leds.comenzar_prueba();
-	    delay(250);
+	    delay(500);
+	    tiempo_programa = millis();
 	    attachInterrupt(digitalPinToInterrupt(boton_encoder), blink, FALLING);		//Establecimiento de la interrupcion del boton del encoder para el programa
 	}
 
@@ -127,18 +128,3 @@ void blink(){
 	}	
 	tiempo_interrupt = millis();
 }
-
-
-
-/*
-
-
-		if( (tension > 65) || (tension < 40) ){
-				error = "ERROR 4";
-		}
-
-		if( (corriente != 0) && (velocidad == 0)){
-				error = "ERROR 5";
-		}
-
-*/

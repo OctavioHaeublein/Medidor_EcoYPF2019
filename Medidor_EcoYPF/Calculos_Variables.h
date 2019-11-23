@@ -28,7 +28,6 @@ class Calculos_Variables{
 		float potencia = 0;             	    //Potencia del motor
 		float energia = 0;              	    //Energia consumida por el motor
 		float velocidad = 0;            	    //Velocidad tangencial de la rueda (Km/h)
-		//float tiempo_objetivo = 0;
 		float tiempo_programa = 0;
 		float corriente_objetivo = 0;           //Corriente estimada que debera mantener para alcanzar el timepo objetivo
 		float soc = 0;							//Estado de carga actual de las baterias (soc_calculado - soc_inicial)
@@ -68,7 +67,7 @@ class Calculos_Variables{
 		
 		float calcular_velocidad(float revoluciones, float tiempo_transcurrido){
 
-			revoluciones = (revoluciones / 2);
+			//revoluciones = (revoluciones / 2);
 			frecuencia += (revoluciones/(tiempo_transcurrido/1000));
 
 			velocidad = (((PI * diametro * frecuencia)/1000)*3.6);				//Calcula la velocidad de la rueda (Km/h)

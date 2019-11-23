@@ -12,17 +12,30 @@ init()
 
 def cargar(archivo):
     
-    os.system('cls')
-    directorio = pathlib.Path(archivo)
+    try:
+        os.system('cls')
+        directorio = pathlib.Path(archivo)
+
+    except Exception as e:
+        print(error + "Error con el formato")
+        print(e)
+        print(reset)
+        time.sleep(2)
+        return 0
+    
     
     for x in directorio.iterdir():
-        tiempo = []
+        tiempo_programa = []
         tension = []
         corriente = []
         potencia = []
         energia = []
+        soc = []
         velocidad = []
-        potencia_objetivo = []
+        corriente_objetivo = []
+        tiempo_objetivo = []
+        variables_graficos = []
+
         i = 1
         print(carga + "Abriendo..." + reset)
         try:
@@ -43,19 +56,21 @@ def cargar(archivo):
             with open(x, 'r') as csv_file:
                 reader = csv.DictReader(csv_file)
                 for row in reader:
-                    tiempo.append(row['tiempo'])
+                    tiempo_programa.append(row['tiempo'])
                     tension.append(row['tension'])
                     corriente.append(row['corriente'])
                     potencia.append(row['potencia'])
                     energia.append(row['energia'])
+                    soc.append(row['soc'])
                     velocidad.append(row['velocidad'])
-                    potencia_objetivo.append(row[potencia_objetivo])
+                    corriente_objetivo.append(row['corriente_objetivo'])
+                    tiempo_objetivo.append(row['tiempo_objetivo'])
                     print(carga + f"-[{i}/{largo}]-" + reset)
                     i += 1
                     #time.sleep(0.01)
                     
             csv_file.close()
-            cache(i, largo, x.name, tiempo, tension, corriente, potencia, energia, velocidad, potencia_objetivo)
+            cache(i, largo, x.name, tiempo_programa, tension, corriente, potencia, energia,soc, velocidad, corriente_objetivo, tiempo_objetivo)
 
         except Exception as e:
             print(error + f"Error cargando datos desde: {x}")
@@ -66,26 +81,28 @@ def cargar(archivo):
             return 0
 
 
-def cache(i, largo,nombre, tiempo, tension, corriente, potencia, energia, velocidad, potencia_objetivo):
+def cache(i, largo,nombre, tiempo_programa, tension, corriente, potencia, energia,soc, velocidad, corriente_objetivo, tiempo_objetivo):
 
     print(carga + "Almacenando datos en: cache.txt" + reset)
     fecha = int(time.time())
     archivo = str(fecha) + " - " +nombre
-    cache = (pathlib.Path(__file__).parent / f'./datos/{archivo}')
+    cache = (pathlib.Path(__file__).parent / f'./Datos_Medidor/{archivo}')
 
     try:
         with open(cache, 'w') as csv_file:
-            fields = ['tiempo', 'tension', 'corriente', 'potencia', 'energia', 'velocidad']
+            fields = ['tiempo_programa', 'tension', 'corriente', 'potencia', 'energia','soc', 'velocidad', 'corriente_objetivo', 'tiempo_objetivo']
             writer = csv.DictWriter(csv_file, fieldnames=fields, delimiter = ',')
             writer.writeheader()
             for x in range(len(tiempo)):
-                writer.writerow({'tiempo': str(tiempo[x]),
+                writer.writerow({'tiempo_programa': str(tiempo[x]),
                                  'tension': str(tension[x]),
                                  'corriente': str(corriente[x]),
                                  'potencia': str(potencia[x]),
                                  'energia': str(energia[x]),
+                                 'soc': str(soc[x]),
                                  'velocidad': str(velocidad[x]),
-                                 'potencia_objetivo': str(potencia_objetivo[x])})
+                                 'corriente_objetivo': str(corriente_objetivo[x]),
+                                 'tiempo_objetivo': str(tiempo_objetivo[x])})
 
                 print(carga + f"-[{i}/{largo}]-" + reset)
                 i += 1

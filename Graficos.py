@@ -7,14 +7,17 @@ import pyfiglet
 import os
 from colorama import init, Style, Fore, Back
 
-tiempo = []
+tiempo_programa = []
 tension = []
 corriente = []
 potencia = []
 energia = []
+soc = []
 velocidad = []
-potencia_objetivo = []
+corriente_objetivo = []
+tiempo_objetivo = []
 variables_graficos = []
+
 directorio = ""
 
 #variables = {"1":Todo,"2":Tiempo,"3":Tension,"4":Corriente,"5":Potencia,"6":Energia, "7": Velocidad}
@@ -36,7 +39,7 @@ def datos(directorio):
     titulo()
     
     if(directorio == ""):
-        directorio = (pathlib.Path(__file__).parent / f'./datos/')
+        directorio = (pathlib.Path(__file__).parent / f'./Datos_Medidor/')
         x = 1
         directorios = []
         for i in directorio.iterdir():
@@ -61,12 +64,13 @@ def datos(directorio):
     print(opcion + "3." + Back.RESET + " Corriente")
     print(opcion + "4." + Back.RESET + " Potencia")
     print(opcion + "5." + Back.RESET + " Energía")
-    print(opcion + "6." + Back.RESET + " Velocidad")
-    print(opcion + "7." + Back.RESET + " Volver")
+    print(opcion + "6." + Back.RESET + " SoC")
+    print(opcion + "7." + Back.RESET + " Velocidad")
+    print(opcion + "8." + Back.RESET + " Volver")
     print("------------------------------------------------------------------" + reset)
     variables = input("Variables a graficar (X-Y): ")
     
-    if(variables == '7'):
+    if(variables == '8'):
         return 0
     
     graficar(directorio, variables)
@@ -78,13 +82,15 @@ def graficar(directorio, variables):
         with open(directorio,'r') as csv_file:
             reader = csv.DictReader(csv_file)
             for row in reader:
-                tiempo.append(float(row['tiempo']))
-                tension.append(float(row['tension']))
-                corriente.append(float(row['corriente']))
-                potencia.append(float(row['potencia']))
-                energia.append(float(row['energia']))
-                velocidad.append(float(row['velocidad']))
-                potencia_objetivo.append(float(row['potencia_objetivo']))
+                tiempo_programa.append(row['tiempo'])
+                tension.append(row['tension'])
+                corriente.append(row['corriente'])
+                potencia.append(row['potencia'])
+                energia.append(row['energia'])
+                soc.append(row['soc'])
+                velocidad.append(row['velocidad'])
+                corriente_objetivo.append(row['corriente_objetivo'])
+                tiempo_objetivo.append(row['tiempo_objetivo'])
                 print(carga + f"-[{i}]-" + reset)
                 i += 1
                 #time.sleep(0.01)
@@ -99,7 +105,7 @@ def graficar(directorio, variables):
         return 0
         
     if(variables == "1"):
-        variables = "2 3 4 5 6"
+        variables = "2 3 4 5 6 7"
         cantidad_graficos = 5
         print("Reasignando..")
         
@@ -128,29 +134,32 @@ def graficar(directorio, variables):
             label = 'Potencia (W)'
         if(variables_graficos[i]=="5"):
             y_grafico = energia
-            label = 'Energia (WH)'
+            label = 'Energia (Wh)'
         if(variables_graficos[i]=="6"):
+            y_grafico = soc
+            label = 'State of Charge (%)'
+        if(variables_graficos[i]=="7"):
             y_grafico = velocidad
             label = 'Velocidad (Km/h)'
             
         if(len(variables_graficos) == 1):
         
             fig,ax = plt.subplots()
-            ax.plot(tiempo, y_grafico)
-            ax.set(xlabel = 'Tiempo(h)', ylabel = label)
+            ax.plot(tiempo_programa, y_grafico)
+            ax.set(xlabel = 'Tiempo (min)', ylabel = label)
             ax.grid()
         
-            if(variables_graficos[i] == '4'):
-                ax.plot(tiempo,potencia_objetivo, dashes=[6,2],label = 'Potencia Objetivo')
+            if(variables_graficos[i] == '3'):
+                ax.plot(tiempo_programa,corriente_objetivo, dashes=[6,2],label = 'Corriente Objetivo')
                 ax.legend()
         else:
             
             plt.subplot(cantidad_graficos, 2, x)
-            plt.plot(tiempo, y_grafico)
+            plt.plot(tiempo_programa, y_grafico)
             plt.ylabel(label)
-            plt.xlabel('Tiempo (h)')
-            if(variables_graficos[i] == '4'):
-                plt.plot(tiempo,potencia_objetivo, dashes=[6,2],label = 'Potencia Objetivo')
+            plt.xlabel('Tiempo (min)')
+            if(variables_graficos[i] == '3'):
+                plt.plot(tiempo_programa,corriente_objetivo, dashes=[6,2],label = 'Corriente Objetivo')
                 plt.legend()
             plt.grid()
             plt.tight_layout()

@@ -95,10 +95,11 @@ class Calculos_Variables{
 			512  2.5
 			*/
 
-			if(tension_hall >= 525){     
-				corriente = interpolar (tension_hall, 525, 1023, 0, 70);
+			if(tension_hall >= 512){     
+				corriente = interpolar (tension_hall, 512, 1023, 0, 70);
+				//corriente = map(tension_hall,)
 			}else{
-				corriente = interpolar (tension_hall, 0, 525, 0, -70);
+				corriente = interpolar (tension_hall, 0, 512, 0, -70);
 				}
 
 			sum_corriente  += (corriente * tiempo_transcurrido);						//Calcula la corriente desarrollada en el tiempo para el calculo del SOC (Ampere - hora)

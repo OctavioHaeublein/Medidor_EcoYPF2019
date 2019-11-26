@@ -50,13 +50,22 @@ class LCD_Leds{
 			lcd.print("CARGANDO PROGRAMA...");
 			lcd.setCursor(0,2);
 			lcd.print("NO ACELERAR");
+			lcd.setCursor(0,3);
+			lcd.print("HAEUBLEIN, HECHEME");
 
 			/*---ENCENDIDO DE LEDS---*/
 			int leds[] = {LR1,LR2,LA1,LA2,LA3,LV1,LV2,LV3,LV4,LV5};
 			for(int i = 0; i<=9; i++){
 				digitalWrite(leds[i],HIGH);
+				delay(100);
 			}
-			  
+			delay(250);
+			for(int i = 9; i==0; i--){
+				digitalWrite(leds[i],LOW);
+				delay(100);
+			} 
+			delay(250);
+
 			/*---DIGITAL OUTPUTS---*/
 			pinMode(LR1 , OUTPUT);   				//LED Rojo1
 			pinMode(LR2 , OUTPUT);   				//LED Rojo
@@ -68,12 +77,7 @@ class LCD_Leds{
 			pinMode(LV3 , OUTPUT);   				//LED Verde2
 			pinMode(LV4 , OUTPUT);   				//LED Verde3
 			pinMode(LV5 , OUTPUT);   				//LED Verde4
-			  
-			/*---DIGITAL PWM OUTPUTS---*/
-			pinMode(RGB_R , OUTPUT);    			//RGB Rojo
-			pinMode(RGB_V , OUTPUT);    			//RGB Verde
-			pinMode(RGB_A , OUTPUT);    			//RGB Azul
-			
+
 			/*---CONFIGURACION ENCODER---*/
 			pinMode(boton_encoder  , INPUT_PULLUP);	//Señal de entrada del boton
 	 		pinMode(dt  , INPUT);					//Señal de entrada 'A' del encoder
@@ -243,35 +247,3 @@ class LCD_Leds{
 		}
 		
 };
-
-
-/*
-void leds(float soc, float diferencia){							//Control de tira de LEDS y RGB 
-
-			int cantidad_leds = map(soc,0.1,1,0,9);
-			  
-			int leds[] = {LR1,LR2,LA1,LA2,LA3,LV1,LV2,LV3,LV4,LV5};
-			  
-			for(int i = 0; i<=9; i++){
-				digitalWrite(leds[i],LOW);
-			}
-			
-			for(int i = 0; i <= cantidad_leds; i++){
-				digitalWrite(leds[i],HIGH);
-			}
-
-			if(diferencia >= 0){
-				verde = map(diferencia,0,5,255,0);     	//Mapea la diferencia de potencia positiva (por debajo del objetivo)
-				azul = 0;								  	//Deja el color restante en 0 para que no se muestre
-				rojo = (255 - verde);                     	//Hace la diferencia entre el nivel de tension que deberia tener el led verde, y el restante se va al rojo
-			}else{
-				azul = map(diferencia, -5, 0, 255, 0);  	//Mapea la diferencia de potencia negativa (por arriba del objetivo)
-				verde = 0;									//Deja el color restante en 0 para que no se muestre
-				rojo = (255 - azul);                     	//Hace la diferencia entre el nivel de tension que deberia tener el led verde, y el restante se va al rojo
-			}
-			  
-			analogWrite(RGB_R , rojo);                         //AnalogWrite correspondiente a los niveles de tension
-			analogWrite(RGB_V , verde);
-			analogWrite(RGB_A , azul);
-		}
-*/

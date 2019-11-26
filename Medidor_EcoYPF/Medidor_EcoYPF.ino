@@ -1,12 +1,10 @@
 #include "Modulo_SD.h"
 #include "LCD_Leds.h"
 #include "Calculos_Variables.h"
-#include "Velocidad_Aceleracion.h"
 
 LCD_Leds LCD_Leds;
 Modulo_SD Modulo_SD;
 Calculos_Variables Calculos_Variables;
-Velocidad_Aceleracion Velocidad_Aceleracion;
 
 const int sensor_inductivo = 2;			//Pin de entrada del sensor inductivo
 const int boton_encoder = 3;			//Pin de entrada del boton del encoder
@@ -32,7 +30,7 @@ int muestreo = 1000;					//Tiempo de intervalo entre medidas
 
 String error = "";						//Variable para disponer de un manejo de errores que se muestre en el LCD
 
-float minimo = 200;						//Intervalo minimo de tiempo entre interrupciones (Evitar ruido)
+float minimo = 100;						//Intervalo minimo de tiempo entre interrupciones (Evitar ruido)
 float tiempo_interrupt = 0;				//Tiempo transcurrido entre interrupciones
 bool boton_apretado = false;			//Si el boton del encoder fue apretado
 
@@ -49,7 +47,7 @@ void setup() {
 	Modulo_SD.setup(LCD_Leds.cargar());															//Declaracion inicial de salidas y entradas para el header
 
 	attachInterrupt(digitalPinToInterrupt(boton_encoder), blink, FALLING);		//Establecimiento de la interrupcion del boton del encoder para el programa
-	//attachInterrupt(digitalPinToInterrupt(sensor_inductivo), blink, FALLING);	//Establecimiento de la interrupcion del sensor inductivo para la velocidad
+	attachInterrupt(digitalPinToInterrupt(sensor_inductivo), blink, FALLING);	//Establecimiento de la interrupcion del sensor inductivo para la velocidad
 
 }
 
@@ -60,29 +58,24 @@ void loop() {
 	if( tiempo_transcurrido >= muestreo ){
 
 		detachInterrupt(digitalPinToInterrupt(boton_encoder));
-		//detachInterrupt(digitalPinToInterrupt(sensor_inductivo));
+		detachInterrupt(digitalPinToInterrupt(sensor_inductivo));
 
-		tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_programa = Calculos_Variables. calcular(tiempo_transcurrido, tiempo_objetivo, revoluciones);
+		tension = Calculos_Variables.calcular_tension();
+		corriente = Calculos_Variables.calcular_corriente(tiempo_transcurrido);
+		soc = Calculos_Variables.calcular_capacidad(false);
+		velocidad = Calculos_Variables.calcular_velocidad(revoluciones, tiempo_transcurrido);
 
-		LCD_Leds.datos(tension, corriente, potencia, energia, soc, corriente_objetivo, velocidad, error, tiempo_objetivo);
-		LCD_Leds.control_leds(soc, diferencia);
+		potencia         = (tension * corriente);							//Calcula la potencia en funcion de la corriente, y la tension medida en las baterias
+		energia         += (potencia * (tiempo_transcurrido/ 3600000)); 				//Calcula la energia consumida hasta ese punto en funcion de la potencia y tiempo (watt - hora)
+		tiempo_programa += (tiempo_transcurrido/60000);
 
-		revoluciones = 0;
+		if(tiempo_objetivo != 0){
+			corriente_objetivo = (soc / (tiempo_objetivo/60));			//Divide la capacidad restante de la bateria (Ah) por el tiempo restante pasado a horas, para determinar la corriente para desarrollar
+		}else{
+				corriente_objetivo = 0;
+			}
 
-		error = Modulo_SD.SD_guardar("1", tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa);
-		
-		if(tiempo_objetivo > 0){
-			tiempo_objetivo = (tiempo_objetivo - (tiempo_transcurrido/60000));
-				
-				if( tiempo_objetivo < 0){
-					tiempo_objetivo = 0;
-					Modulo_SD.estado_prueba();
-				}
-
-			error = Modulo_SD.SD_guardar("2", tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa);
-		}
-
-		if( ((corriente != 0) || (velocidad != 0)) && ((error != "ERROR 1") || (error != "ERROR 1") || (error != "ERROR 1")) ){
+		if( ((corriente != 0) || (velocidad != 0)) ){
 			error = Modulo_SD.SD_guardar("1", tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_objetivo, tiempo_programa);
 			if(tiempo_objetivo > 0){
 				
@@ -97,22 +90,31 @@ void loop() {
 			}
 		}
 		
+		LCD_Leds.datos(tension, corriente, potencia, energia, soc, corriente_objetivo, velocidad, error, tiempo_objetivo);
+		LCD_Leds.control_leds(soc, diferencia);
+
+		revoluciones = 0;
+
 		tiempo_programa = millis();
 
 		attachInterrupt(digitalPinToInterrupt(boton_encoder), blink, FALLING);		//Establecimiento de la interrupcion del boton del encoder para el programa
-  		//attachInterrupt(digitalPinToInterrupt(sensor_inductivo), blink, FALLING);		//Establecimiento de la interrupcion del sensor inductivo para la velocidad
+  		attachInterrupt(digitalPinToInterrupt(sensor_inductivo), blink, FALLING);		//Establecimiento de la interrupcion del sensor inductivo para la velocidad
 
 	}
 
 	if(boton_apretado){
 		detachInterrupt(digitalPinToInterrupt(boton_encoder));
+		detachInterrupt(digitalPinToInterrupt(sensor_inductivo));
+
 		delay(250);
 		boton_apretado = !boton_apretado;
 	    Modulo_SD.estado_prueba();
 	    tiempo_objetivo = LCD_Leds.comenzar_prueba();
-	    delay(500);
+	    delay(250);
 	    tiempo_programa = millis();
+
 	    attachInterrupt(digitalPinToInterrupt(boton_encoder), blink, FALLING);		//Establecimiento de la interrupcion del boton del encoder para el programa
+	    attachInterrupt(digitalPinToInterrupt(sensor_inductivo), blink, FALLING);	//Establecimiento de la interrupcion del sensor inductivo para la velocidad
 	}
 
 }

@@ -34,7 +34,7 @@ class Calculos_Variables{
 
 		void setup(){
 						
-			pinMode(A0,INPUT);    				//Nivel de tension de las baterias
+			pinMode(A0, INPUT);    				//Nivel de tension de las baterias
 			pinMode(A1, INPUT);   				//Nivel de tension del sensor Hall
 			
 		}
@@ -43,9 +43,13 @@ class Calculos_Variables{
 			return ( (x-in_min)*(out_max - out_min) + (out_min * (in_max - in_min)) ) / (in_max - in_min);
 		}
 		
-		float calcular_capacidad (bool tabla, float sum_corriente, float tiempo_objetivo){	//Calculo de capacidad restante de  la bateria y calculo por tabla
+		float calcular_capacidad (bool tabla){	//Calculo de capacidad restante de  la bateria y calculo por tabla
 			
-			if(tabla){soc_inicial = map(tension,46.04,50.92,0.1,1);}
+			if(tabla){
+				//soc_inicial = map(tension,46.04,50.92,0.1,1);
+				tension = calcular_tension();
+				soc_inicial = interpolar(tension, 46.04,50.92,0.1,1);
+			}
 			
 			soc_calculado = ((-1/capacidad_baterias) * sum_corriente) ;
 			
@@ -56,13 +60,9 @@ class Calculos_Variables{
 			
 			soc = (soc * capacidad_baterias);
 
-			if(tiempo_objetivo != 0){
-				corriente_objetivo = (soc / (tiempo_objetivo/60));			//Divide la capacidad restante de la bateria (Ah) por el tiempo restante pasado a horas, para determinar la corriente para desarrollar
-			}else{
-				corriente_objetivo = 0;
-			}
+			
 						
-			return soc, corriente_objetivo;
+			return soc;
 		}
 		
 		float calcular_velocidad(float revoluciones, float tiempo_transcurrido){
@@ -77,16 +77,65 @@ class Calculos_Variables{
 			return velocidad;
 		}
 
-		float calcular(float tiempo_transcurrido, float tiempo_objetivo, float revoluciones){
+		float calcular_corriente(float tiempo_transcurrido){
 			
-			/*---LECTURA DE SENSORES---*/
+			/*---LECTURA DE SENSOR---*/
+			  
+			for(int i = 0; i < 5; i++){													//Se realizan 5 lecturas seguidas y se promedia
+			tension_hall    += analogRead(A1);
+			}
+			  
+			/*---CALCULO DE CORRIENTE---*/
+
+			tension_hall    = (tension_hall / 10); 										//Mapea los niveles de tension medidos por el sensor hall
+			
+			/*
+			1023 5  CUIDADO CON LA FUNCION INTERPOLAR, PUEDE LLEGAR A TIRAR VALORES NEGATIVOS
+			CUIDADO CON MALA RESOLUCION EN SENSOR HALL
+			512  2.5
+			*/
+
+			if(tension_hall >= 525){     
+				corriente = interpolar (tension_hall, 525, 1023, 0, 70);
+			}else{
+				corriente = interpolar (tension_hall, 0, 525, 0, -70);
+				}
+
+			sum_corriente  += (corriente * tiempo_transcurrido);						//Calcula la corriente desarrollada en el tiempo para el calculo del SOC (Ampere - hora)
+
+			return corriente;
+		}
+
+		float calcular_tension(){
+			/*---LECTURA DE SENSOR---*/
+			  
+			for(int i = 0; i < 5; i++){													//Se realizan 5 lecturas seguidas y se promedia
+			tension_divisor += analogRead(A0);
+			}
+			  
+			/*---CALCULO DE TENSION---*/
+			  
+			tension_divisor = (tension_divisor/5);
+			  
+			tension_divisor = ( (tension_divisor * (r1 + r2)) / r2 );
+			  
+			tension         = interpolar (tension_divisor, 7611.45, 9207.79, 38.4, 51.4);  
+
+			return tension;
+		}
+
+};
+
+
+/*
+
 			  
 			for(int i = 0; i < 5; i++){													//Se realizan 5 lecturas seguidas y se promedia
 			tension_hall    += analogRead(A1);
 			tension_divisor += analogRead(A0);
 			}
 			  
-			/*---CALCULO DE TENSION, CORRIENTE, POTENCIA Y ENERGIA---*/
+
 			  
 			tension_divisor = (tension_divisor/5);
 			  
@@ -102,8 +151,8 @@ class Calculos_Variables{
 					corriente = interpolar (tension_hall, 0, 525, 0, -70);
 				}
 
-			sum_corriente  +=  (corriente * tiempo_transcurrido);				//Calcula la corriente desarrollada en el tiempo para el calculo del SOC (Ampere - hora)
-			potencia        = (tension * (corriente/ 3600000));							//Calcula la potencia en funcion de la corriente, y la tension medida en las baterias
+			sum_corriente  += (corriente * tiempo_transcurrido);						//Calcula la corriente desarrollada en el tiempo para el calculo del SOC (Ampere - hora)
+			potencia        = (tension * corriente);							//Calcula la potencia en funcion de la corriente, y la tension medida en las baterias
 			energia        += (potencia * (tiempo_transcurrido/ 3600000)); 				//Calcula la energia consumida hasta ese punto en funcion de la potencia y tiempo (watt - hora)
 
 			tiempo_programa += (tiempo_transcurrido/60000);
@@ -117,6 +166,4 @@ class Calculos_Variables{
 			calcular_velocidad(revoluciones, tiempo_transcurrido);
 
 			return tension, corriente, potencia, energia, soc, velocidad, corriente_objetivo, tiempo_programa;
-		}
-
-};
+*/

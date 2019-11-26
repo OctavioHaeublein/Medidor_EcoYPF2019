@@ -10,4 +10,3 @@
 
 /***TO-DO***/
  * Corregir mapeo de corriente de acuerdo a los limites del sensor hall utilizado
- * Calcular distanica recorrida de la rueda en funcion de la velocidad y tiempo en python
